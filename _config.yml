@@ -1,9 +1,9 @@
 title: Nob Hill Chile Drop
-description: A New Mexico welcome to the new year. Join the Nob Hill Chile Drop at Hotel Zazz in Albuquerque on December 31, 2026.
+description: Watch the Nob Hill Chile Drop at midnight on December 31, 2026 at Hotel Zazz, Albuquerque. Enter the free group drawing for Hot Spot admission.
 url: https://aindaco1.github.io
 baseurl: /nob-hill-chile-drop
 lang: en-US
-asset_version: "20261028-2"
+asset_version: "20261028-3"
 preview: true
 theme: null
 api_base: https://nob-hill-chile-drop-api.jogo.workers.dev

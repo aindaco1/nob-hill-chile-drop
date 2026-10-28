@@ -2,23 +2,26 @@
   'use strict';
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const scene = document.querySelector('[data-drop-scene]');
-  const replay = document.querySelector('[data-drop-replay]');
-  if (scene && replay) {
-    const finishDrop = () => { scene.classList.remove('is-dropping'); replay.disabled = false; };
-    const drop = () => {
-      if (reducedMotion.matches) return;
-      replay.disabled = true;
-      scene.classList.add('is-dropping');
+  const motionToggle = document.querySelector('[data-motion-toggle]');
+  if (scene && motionToggle) {
+    let visible = false;
+    let paused = false;
+    const syncMotion = () => {
+      scene.classList.toggle('is-dropping', visible && !paused && !document.hidden && !reducedMotion.matches);
+      motionToggle.hidden = reducedMotion.matches;
+      motionToggle.textContent = paused ? 'Resume animation' : 'Pause animation';
     };
-    scene.addEventListener('animationend', finishDrop);
-    replay.hidden = false;
-    replay.addEventListener('click', drop);
-    reducedMotion.addEventListener('change', finishDrop);
-    // On narrow screens, wait until the illustration is in view.
+    scene.classList.add('has-drop-animation');
+    motionToggle.addEventListener('click', () => { paused = !paused; syncMotion(); });
+    reducedMotion.addEventListener('change', syncMotion);
+    document.addEventListener('visibilitychange', syncMotion);
+    // Keep the loop's position when the illustration or browser tab is out of view.
     const observer = new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) { drop(); observer.disconnect(); }
-    }, { threshold: .35 });
+      visible = entries.some(entry => entry.isIntersecting);
+      syncMotion();
+    });
     observer.observe(scene);
+    syncMotion();
   }
 
   const cursorMode = matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) and (forced-colors: none)');

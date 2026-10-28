@@ -10,38 +10,23 @@ location: Nob Hill, Albuquerque, New Mexico
 maps_url: https://www.google.com/maps/search/?api=1&query=Hotel+Zazz+Albuquerque+New+Mexico
 instagram: https://www.instagram.com/nobhillchiledrop/
 navigation:
-  - label: The celebration
-    anchor: celebration
   - label: The Hot Spot
     anchor: hot-spot
-  - label: Plan your night
+  - label: Watching the drop
+    anchor: watch
+  - label: Getting here
     anchor: visit
 hero:
-  eyebrow: A New Mexico kind of New Year's Eve
-  line_one: New year.
-  line_two: More heat.
+  eyebrow: New Year's Eve in Albuquerque
+  line_one: Nob Hill
+  line_two: Chile Drop
   description: One very Albuquerque way to welcome the new year.
   primary_label: Enter the free drawing
-  secondary_label: Just here for the drop?
-celebration:
-  eyebrow: Big chile. Bigger celebration.
-  title: A little local flavor.<br>A whole new year.
-  description: When the clock strikes midnight, Nob Hill brings the heat. Gather at Hotel Zazz for the chile drop and ring in 2027 with your neighbors, your people, and a little New Mexico magic.
-  details:
-    - number: "01"
-      title: The midnight moment
-      text: Count down together as the chile makes its descent to welcome the new year.
-    - number: "02"
-      title: Right here in Nob Hill
-      text: A celebration at Hotel Zazz, in the heart of Albuquerque's Route 66 neighborhood.
-    - number: "03"
-      title: Make a night of it
-      text: Bring your people and bundle up. The Hot Spot opens at 9 p.m., with alcohol sales until 11:30 p.m. and the chile drop at midnight.
+  secondary_label: Watch without Hot Spot access
 access:
   name: The Hot Spot
   status: Free drawing · 2,000 guest capacity
-  heading: Drinks. Music.<br>A front-row countdown.
-  description: Make the Hot Spot your New Year's Eve gathering place. Grab a drink, get close to the music, and stay for the midnight chile drop in our controlled-access area at Hotel Zazz.
+  description: Watch the drop up close, listen to the music, and buy a drink in the Hot Spot at Hotel Zazz. Enter the free drawing below for a chance at admission.
   alcohol_heading: Alcohol sales in the Hot Spot
   alcohol_note: Drinks are purchased separately. Hot Spot admission does not include alcohol.
   opens_at: "2026-12-31T21:00:00-07:00"
@@ -49,49 +34,22 @@ access:
   alcohol_ends_at: "2026-12-31T23:30:00-07:00"
   alcohol_ends_label: "11:30 p.m."
   hours_note: December 31 · All times Mountain Time
-  benefits:
-    - Alcohol sales from 9 p.m. until 11:30 p.m.
-    - A close-up view of the chile drop
-    - Music and the atmosphere at the heart of the celebration
-    - A chance to be part of the event coverage
-  notice: No purchase or payment details required. Entry is a chance for Hot Spot admission, not a confirmed reservation. The drawing date will be announced here.
-  group_note: One entry for your whole group. Each verified group gets one place in the random drawing; larger groups do not get extra entries. If selected, everyone in your group gets in together.
+  notice: Entry is free and doesn't guarantee admission. We'll announce the drawing date here.
+  group_note: Enter once for everyone coming with you. If your group is selected, you all get in together.
 viewing:
-  eyebrow: One countdown. Two ways to be there.
-  title: You don't have to be<br>in the Hot Spot to watch.
-  description: The chile drop can also be watched from public vantage points outside the controlled-access area. You don't need Hot Spot access to join the neighborhood countdown.
-  note: The public viewing map and street access information will be shared before the event.
+  title: Watching from outside the Hot Spot?
+  description: You can watch the chile drop from public viewing areas without entering the drawing. Hot Spot admission is only needed for the controlled-access area.
 film:
-  title: A taste of the drop.
-  description: Follow along as Nob Hill gets ready for its midnight moment.
+  title: Watch the chile drop
   youtube_id: ""
   poster: /assets/art/chile-sign.svg
-  caption: Event footage is coming soon. In the meantime, see the latest from Nob Hill Chile Drop on Instagram.
 visit:
-  title: Your night,<br>with a little less guesswork.
-  details:
-    - title: Getting here
-      text: Hotel Zazz in Nob Hill, Albuquerque. Plan your route and allow time to walk to the event.
-    - title: Parking & street access
-      text: Confirmed parking options, street closures, and public viewing locations will be posted here before the event.
-    - title: Accessibility & facilities
-      text: Accessible arrival routes, viewing information, and restroom locations will be shared with the final event guide.
-    - title: What to bring
-      text: Dress for an outdoor winter evening. Bag rules, permitted items, and admission instructions will be confirmed before the event.
+  title: Getting here
+  note: We'll post the viewing map, parking, street access, and accessibility details here before the event.
 faq:
   - question: When does the chile drop?
     answer: The chile drops at midnight Mountain Time as December 31, 2026 becomes January 1, 2027. The Hot Spot opens at 9 p.m., and alcohol sales stop at 11:30 p.m.
-  - question: Where is the event?
-    answer: At Hotel Zazz in Nob Hill, Albuquerque, New Mexico. Public viewing points and the entrance map are coming soon.
-  - question: What is the Hot Spot?
-    answer: The Hot Spot brings together alcohol sales, music, and a close-up view of the chile drop at Hotel Zazz. It opens at 9 p.m. Alcohol sales stop at 11:30 p.m., ahead of the midnight drop. Enter the free drawing for a chance at admission for your whole group. Drinks are purchased separately and are not included with admission.
-  - question: Can I watch without Hot Spot access?
-    answer: Yes. People outside the controlled-access area can watch from public vantage points. We'll share the confirmed viewing map before the event.
-  - question: Can my family or group stay together?
-    answer: Yes. Enter once for your whole group, including yourself. Groups are selected together; nobody in a selected group is split off to fill the remaining space. There is one group entry per email address.
   - question: How does the free drawing work?
-    answer: Confirm your email to make your group entry eligible. Each verified group entry gets one place in a random order, regardless of group size. Groups are selected in that order up to the 2,000-person capacity. Selection stops when the next whole group won't fit; that group and all later groups remain on the waitlist. There is no payment to enter or to receive selected admission.
+    answer: Enter your group and confirm your email. Each verified group gets one place in a random order, regardless of group size. We select whole groups in that order, up to 2,000 people. When the next group won't fit, selection stops and the remaining groups stay on the waitlist. There's one group entry per email address, and no charge for entry or selected admission.
   - question: When will I hear about the drawing?
-    answer: The drawing date is still to be announced. After organizers close entries and review the drawing, selected groups will be notified by email. Every group can use its private entry link to check the result.
-  - question: Is there a livestream?
-    answer: Coverage is being planned. The viewing link and confirmed broadcast schedule will appear here when they're ready.
+    answer: We haven't set a drawing date yet. Once entries close and the results are reviewed, we'll email selected groups. You can also check your result using the private link in your entry email.

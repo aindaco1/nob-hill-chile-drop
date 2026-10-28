@@ -24,6 +24,26 @@ test('mobile navigation, keyboard FAQ and reduced motion remain usable',async({p
   await mock(page);await page.setViewportSize({width:375,height:812});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('./');await page.getByRole('button',{name:'Open menu'}).click();await expect(page.locator('#mobile-nav')).toBeVisible();await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'Open menu'})).toBeFocused();await expect(page.locator('#mobile-nav')).toBeHidden();
   const question=page.locator('summary').filter({hasText:'How does the free drawing work?'});await question.focus();await page.keyboard.press('Enter');await expect(question.locator('..')).toHaveAttribute('open','');
 });
+test('chile loops automatically, can be paused, and respects reduced motion',async({page})=>{
+  await mock(page);await page.goto('./');
+  const chile=page.locator('.hero__sign .chile-drop');
+  await expect.poll(()=>chile.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('running');
+  // Observe an actual repeat, rather than only checking the CSS iteration count.
+  await chile.evaluate(el=>new Promise(resolve=>el.addEventListener('animationiteration',()=>resolve(true),{once:true})));
+  await page.getByRole('button',{name:'Pause animation',exact:true}).click();
+  await expect.poll(()=>chile.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
+  const pausedAt=await chile.evaluate(el=>el.getAnimations()[0].currentTime);
+  await page.locator('footer').scrollIntoViewIfNeeded();await chile.scrollIntoViewIfNeeded();
+  expect(await chile.evaluate(el=>el.getAnimations()[0].currentTime)).toBe(pausedAt);
+  await page.getByRole('button',{name:'Resume animation',exact:true}).click();
+  await expect.poll(()=>chile.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('running');
+  await page.locator('footer').scrollIntoViewIfNeeded();
+  await expect.poll(()=>chile.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
+  await chile.scrollIntoViewIfNeeded();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect.poll(()=>chile.evaluate(el=>el.getAnimations().length)).toBe(0);
+  await expect(page.getByRole('button',{name:'Pause animation',exact:true})).toBeHidden();
+});
 test('WCAG 2.2 AA checks and 200% text reflow pass',async({page})=>{
   await mock(page);await page.goto('./');await waitForStableRendering(page);const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();expect(results.violations).toEqual([]);await page.setViewportSize({width:375,height:812});await applyTextScale(page,200);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

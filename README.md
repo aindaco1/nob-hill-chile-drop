@@ -31,7 +31,7 @@ npm run api:check
 
 Edit `_data/event.yml` for public event information and `_config.yml` for hosting configuration. Times are explicit Mountain Time, not the visitor's local time. Fonts are self-hosted Barlow Condensed and DM Sans under their OFL licenses; build preparation copies the license files alongside them. The original SVG chile illustration and navy, lime, red, cream and blue palette take inspiration from the event's Instagram neon sign. No Instagram photos or old event details were copied.
 
-Add an approved YouTube ID to `film.youtube_id` when footage is ready. Its player loads only on a visitor's click. Arrival times, parking, accessible routes and the public viewing map remain visibly unconfirmed. Set `preview: false` when the final public launch should be indexed. No custom domain is configured.
+Add an approved YouTube ID to `film.youtube_id` when footage is ready. The footage section stays hidden until a video is supplied; its player loads only on a visitor's click. Parking, accessible routes and the public viewing map remain unconfirmed. Set `preview: false` when the final public launch should be indexed. No custom domain is configured.
 
 ## Drawing operations
 

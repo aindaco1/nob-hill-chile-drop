@@ -18,7 +18,7 @@ try {
     h1 span{color:#ff725d}img{position:absolute;width:580px;right:-14px;top:5px;transform:rotate(8deg)}
     .details{position:absolute;bottom:50px;left:64px;right:64px;border-top:1px solid #34434b;padding-top:23px;display:flex;justify-content:space-between;align-items:center;font-size:18px;line-height:1.6}
     .badge{background:#d0ec91;color:#101921;padding:14px 20px;font-size:16px;font-weight:bold}
-    </style><main><p class="name">${escape(event.name)}</p><h1>New year.<br><span>More heat.</span></h1><img src="data:image/svg+xml;base64,${art}" alt=""><div class="details"><div>${escape(event.date)} · Midnight Mountain Time<br>${escape(event.venue)} · Albuquerque, New Mexico</div><span class="badge">FREE HOT SPOT DRAWING ↗</span></div></main></html>`);
+    </style><main><p class="name">${escape(event.hero.eyebrow)}</p><h1>${escape(event.hero.line_one)}<br><span>${escape(event.hero.line_two)}</span></h1><img src="data:image/svg+xml;base64,${art}" alt=""><div class="details"><div>${escape(event.date)} · Midnight Mountain Time<br>${escape(event.venue)} · Albuquerque, New Mexico</div><span class="badge">FREE HOT SPOT DRAWING ↗</span></div></main></html>`);
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: 'assets/art/social-card.png' });
 } finally { await browser.close(); }
