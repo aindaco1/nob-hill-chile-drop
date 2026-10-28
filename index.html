@@ -3,20 +3,6 @@ layout: default
 form_script: /assets/js/entry.js
 ---
 {% assign e = site.data.event %}
-<section class="hero wrap" aria-labelledby="hero-title">
-  <div class="hero__copy">
-    <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>{{ e.hero.eyebrow }}</p>
-    <h1 id="hero-title">{{ e.hero.line_one }}<br><span>{{ e.hero.line_two }}</span></h1>
-    <p class="hero__intro">{{ e.hero.description }}</p>
-    <div class="hero__actions"><a class="button button--lime" href="#hot-spot">{{ e.hero.primary_label }} <span aria-hidden="true">↗</span></a><a class="text-link" href="#watch">{{ e.hero.secondary_label }} <span aria-hidden="true">↓</span></a></div>
-    <div class="hero__details"><span>{{ e.date }}<br><strong>{{ e.time_label }}</strong></span><span>{{ e.venue }}<br><strong>Nob Hill · Albuquerque</strong></span></div>
-  </div>
-  <div class="hero__art">
-    <span class="hero__year" aria-hidden="true">2027</span>
-    <div class="hero__sign" data-drop-scene role="img" aria-label="A red chile wrapped in lime lights drops inside a blue neon ring.">{% include_relative assets/art/chile-sign.svg %}</div>
-    <button class="motion-toggle" type="button" data-motion-toggle hidden>Pause animation</button>
-  </div>
-</section>
 <section class="countdown-strip" aria-labelledby="countdown-title">
   <div class="wrap countdown-strip__inner">
     <h2 id="countdown-title">Until the chile drops</h2>
@@ -27,6 +13,21 @@ form_script: /assets/js/entry.js
   </div>
   <noscript><p class="no-js-countdown">The chile drops January 1, 2027 at 12:00 a.m. Mountain Time.</p></noscript>
 </section>
+<section class="hero wrap" aria-labelledby="hero-title">
+  <div class="hero__copy">
+    <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>{{ e.hero.eyebrow }}</p>
+    <h1 id="hero-title">{{ e.hero.line_one }}<br><span>{{ e.hero.line_two }}</span></h1>
+    <p class="hero__intro">{{ e.hero.description }}</p>
+    <div class="hero__actions"><a class="button button--lime" href="#hot-spot">{{ e.hero.primary_label }} <span aria-hidden="true">↗</span></a><a class="text-link" href="#watch">{{ e.hero.secondary_label }} <span aria-hidden="true">↓</span></a></div>
+    <div class="hero__details"><span>{{ e.date_short }}<strong>{{ e.time_label }}</strong></span><span>{{ e.venue }}<strong>Nob Hill · Albuquerque</strong></span></div>
+  </div>
+  <div class="hero__art">
+    <span class="hero__year" aria-hidden="true">2027</span>
+    <div class="hero__sign" data-drop-scene role="img" aria-label="A red chile wrapped in lime lights drops inside a blue neon ring.">{% include_relative assets/art/chile-sign.svg %}</div>
+    <button class="motion-toggle" type="button" data-motion-toggle hidden>Pause animation</button>
+  </div>
+</section>
+
 <section class="hot-spot" id="hot-spot" aria-labelledby="hot-spot-title">
   <div class="wrap hot-spot__inner">
     <div class="hot-spot__copy"><p class="eyebrow">Free drawing for admission</p><h2 id="hot-spot-title">{{ e.access.name }}</h2><p class="lead">{{ e.access.description }}</p>{% include hot-spot-hours.html %}</div>

@@ -11,6 +11,20 @@ test('responsive pages, landmarks and asset paths work at the GitHub project sub
   for(const path of new Set(paths)){const response=await request.get(path);expect(response.status(),path).toBe(200);}
   expect(errors).toEqual([]);
 });
+test('countdown sits below the header and the hero fits the first desktop and phone viewport',async({page})=>{
+  await mock(page);
+  for(const [width,height] of [[1440,900],[1366,768],[1280,720],[1024,768],[768,1024],[390,844],[375,667],[320,568]]){
+    await page.setViewportSize({width,height});await page.goto('./');await waitForStableRendering(page);
+    const header=await page.locator('.site-header').boundingBox();
+    const countdown=await page.locator('.countdown-strip').boundingBox();
+    const hero=await page.locator('.hero').boundingBox();
+    expect(Math.abs(countdown.y-header.y-header.height)).toBeLessThan(1);
+    expect(Math.abs(hero.y-countdown.y-countdown.height)).toBeLessThan(1);
+    expect(hero.y+hero.height,`${width} × ${height}: entire hero above the fold`).toBeLessThanOrEqual(height+1);
+    await expect(page.locator('.hero__actions .button')).toBeInViewport({ratio:1});
+    await expect(page.locator('.hero__details')).toContainText('Hot Spot opens at 10pm MT');
+  }
+});
 test('entry validates and sends one free group, then shows a confirmation instruction',async({page})=>{
   let submitted;await mock(page,(path,request)=>{if(path==='/api/entries'){submitted=request.postDataJSON();return{ok:true};}return{registrationOpen:true};});
   await page.goto('./#hot-spot');await page.getByLabel('Your name',{exact:true}).fill('Sample Guest');await page.getByLabel('Email address',{exact:true}).fill('guest@example.com');await page.getByLabel('People in your group',{exact:true}).fill('4');await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Enter the free drawing'}).click();

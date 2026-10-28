@@ -10,6 +10,8 @@
       scene.classList.toggle('is-dropping', visible && !paused && !document.hidden && !reducedMotion.matches);
       motionToggle.hidden = reducedMotion.matches;
       motionToggle.textContent = paused ? 'Resume animation' : 'Pause animation';
+      motionToggle.setAttribute('aria-label', motionToggle.textContent);
+      motionToggle.classList.toggle('is-paused', paused);
     };
     scene.classList.add('has-drop-animation');
     motionToggle.addEventListener('click', () => { paused = !paused; syncMotion(); });
