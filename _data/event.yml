@@ -29,8 +29,8 @@ access:
   description: Watch the drop up close, listen to the music, and buy a drink in the Hot Spot at Hotel Zazz. Enter the free drawing below for a chance at admission.
   alcohol_heading: Alcohol sales in the Hot Spot
   alcohol_note: Drinks are purchased separately. Hot Spot admission does not include alcohol.
-  opens_at: "2026-12-31T21:00:00-07:00"
-  opens_label: "9 p.m."
+  opens_at: "2026-12-31T22:00:00-07:00"
+  opens_label: "10 p.m."
   alcohol_ends_at: "2026-12-31T23:30:00-07:00"
   alcohol_ends_label: "11:30 p.m."
   hours_note: December 31 · All times Mountain Time
@@ -48,7 +48,7 @@ visit:
   note: We'll post the viewing map, parking, street access, and accessibility details here before the event.
 faq:
   - question: When does the chile drop?
-    answer: The chile drops at midnight Mountain Time as December 31, 2026 becomes January 1, 2027. The Hot Spot opens at 9 p.m., and alcohol sales stop at 11:30 p.m.
+    answer: The chile drops at midnight Mountain Time as December 31, 2026 becomes January 1, 2027. The Hot Spot opens at 10 p.m., and alcohol sales stop at 11:30 p.m.
   - question: How does the free drawing work?
     answer: Enter your group and confirm your email. Each verified group gets one place in a random order, regardless of group size. We select whole groups in that order, up to 2,000 people. When the next group won't fit, selection stops and the remaining groups stay on the waitlist. There's one group entry per email address, and no charge for entry or selected admission.
   - question: When will I hear about the drawing?
