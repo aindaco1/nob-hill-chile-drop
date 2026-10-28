@@ -1,5 +1,89 @@
 (() => {
   'use strict';
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const scene = document.querySelector('[data-drop-scene]');
+  const replay = document.querySelector('[data-drop-replay]');
+  if (scene && replay) {
+    const finishDrop = () => { scene.classList.remove('is-dropping'); replay.disabled = false; };
+    const drop = () => {
+      if (reducedMotion.matches) return;
+      replay.disabled = true;
+      scene.classList.add('is-dropping');
+    };
+    scene.addEventListener('animationend', finishDrop);
+    replay.hidden = false;
+    replay.addEventListener('click', drop);
+    reducedMotion.addEventListener('change', finishDrop);
+    // On narrow screens, wait until the illustration is in view.
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) { drop(); observer.disconnect(); }
+    }, { threshold: .35 });
+    observer.observe(scene);
+  }
+
+  const cursorMode = matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) and (forced-colors: none)');
+  let cursor, cursorPosition, cursorLoading, idleTimer;
+  const hideCursor = () => {
+    document.documentElement.classList.remove('has-chile-cursor');
+    cursor?.classList.remove('is-moving');
+    clearTimeout(idleTimer);
+  };
+  const prepareCursor = async () => {
+    if (!cursorMode.matches || cursor || cursorLoading) return;
+    cursorLoading = true;
+    try {
+      let artwork = scene?.querySelector('svg');
+      if (!artwork) {
+        const response = await fetch(document.body.dataset.chileArt);
+        if (!response.ok) return;
+        artwork = new DOMParser().parseFromString(await response.text(), 'image/svg+xml');
+      }
+      const defs = artwork.querySelector('defs');
+      const body = artwork.querySelector('#chile-body');
+      if (!defs || !body) return;
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '80 100 380 520');
+      svg.setAttribute('fill', 'none');
+      svg.append(defs.cloneNode(true), body.cloneNode(true));
+      // Share the original geometry while keeping inline SVG IDs unique.
+      for (const node of svg.querySelectorAll('*')) {
+        for (const attribute of Array.from(node.attributes)) {
+          let value = attribute.value.replace(/url\(#([^)]*)\)/g, 'url(#cursor-$1)');
+          if (attribute.name === 'id') value = `cursor-${value}`;
+          if (attribute.name === 'href' && value.startsWith('#')) value = `#cursor-${value.slice(1)}`;
+          node.setAttribute(attribute.name, value);
+        }
+      }
+      cursor = document.createElement('div');
+      cursor.className = 'chile-cursor';
+      cursor.setAttribute('aria-hidden', 'true');
+      cursorPosition = document.createElement('span');
+      cursorPosition.className = 'chile-cursor__position';
+      cursorPosition.append(svg);
+      cursor.append(cursorPosition);
+      document.body.append(cursor);
+    } catch { /* Native cursor remains available if artwork cannot load. */ }
+    finally { cursorLoading = false; }
+  };
+  document.addEventListener('pointermove', event => {
+    if (!cursor || !cursorMode.matches || event.pointerType !== 'mouse' || event.target.closest('input,textarea,select,[contenteditable],iframe')) {
+      hideCursor(); return;
+    }
+    cursorPosition.style.transform = `translate3d(${event.clientX - 3}px,${event.clientY - 41}px,0)`;
+    document.documentElement.classList.add('has-chile-cursor');
+    cursor.classList.add('is-moving');
+    clearTimeout(idleTimer);
+    // Sway only while moving; a resting pointer does not loop indefinitely.
+    idleTimer = setTimeout(() => cursor.classList.remove('is-moving'), 180);
+  }, { passive: true });
+  document.documentElement.addEventListener('pointerleave', hideCursor);
+  window.addEventListener('blur', hideCursor);
+  document.addEventListener('keydown', hideCursor);
+  document.addEventListener('scroll', hideCursor, { passive: true, capture: true });
+  document.addEventListener('visibilitychange', hideCursor);
+  cursorMode.addEventListener('change', () => { hideCursor(); prepareCursor(); });
+  prepareCursor();
+
   const clock = document.querySelector('[data-countdown]');
   if (clock) {
     const target = Date.parse(clock.dataset.countdown);

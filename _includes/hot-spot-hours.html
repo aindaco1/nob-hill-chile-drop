@@ -1,0 +1,10 @@
+{% assign access = site.data.event.access %}
+<div class="hot-spot-hours">
+  <h3>{{ access.alcohol_heading }}</h3>
+  <dl>
+    <div><dt>Hot Spot opens</dt><dd><time datetime="{{ access.opens_at }}">{{ access.opens_label }}</time></dd></div>
+    <div><dt>Alcohol sales stop</dt><dd><time datetime="{{ access.alcohol_ends_at }}">{{ access.alcohol_ends_label }}</time></dd></div>
+  </dl>
+  <p class="hot-spot-hours__zone">{{ access.hours_note }}</p>
+  <p class="hot-spot-hours__note">{{ access.alcohol_note }}</p>
+</div>

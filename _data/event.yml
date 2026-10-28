@@ -20,7 +20,7 @@ hero:
   eyebrow: A New Mexico kind of New Year's Eve
   line_one: New year.
   line_two: More heat.
-  description: A giant chile. A neighborhood countdown. One very Albuquerque way to welcome the new year.
+  description: One very Albuquerque way to welcome the new year.
   primary_label: Enter the free drawing
   secondary_label: Just here for the drop?
 celebration:
@@ -36,16 +36,23 @@ celebration:
       text: A celebration at Hotel Zazz, in the heart of Albuquerque's Route 66 neighborhood.
     - number: "03"
       title: Make a night of it
-      text: Bring your people, bundle up, and enjoy the neighborhood. The full evening schedule is coming soon.
+      text: Bring your people and bundle up. The Hot Spot opens at 9 p.m., with alcohol sales until 11:30 p.m. and the chile drop at midnight.
 access:
   name: The Hot Spot
   status: Free drawing · 2,000 guest capacity
-  heading: Get closer<br>to the countdown.
-  description: The Hot Spot is the planned controlled-access area, bringing guests close to the chile and the music for the midnight moment.
+  heading: Drinks. Music.<br>A front-row countdown.
+  description: Make the Hot Spot your New Year's Eve gathering place. Grab a drink, get close to the music, and stay for the midnight chile drop in our controlled-access area at Hotel Zazz.
+  alcohol_heading: Alcohol sales in the Hot Spot
+  alcohol_note: Drinks are purchased separately. Hot Spot admission does not include alcohol.
+  opens_at: "2026-12-31T21:00:00-07:00"
+  opens_label: "9 p.m."
+  alcohol_ends_at: "2026-12-31T23:30:00-07:00"
+  alcohol_ends_label: "11:30 p.m."
+  hours_note: December 31 · All times Mountain Time
   benefits:
+    - Alcohol sales from 9 p.m. until 11:30 p.m.
     - A close-up view of the chile drop
     - Music and the atmosphere at the heart of the celebration
-    - Planned beverage sales; purchases are separate
     - A chance to be part of the event coverage
   notice: No purchase or payment details required. Entry is a chance for Hot Spot admission, not a confirmed reservation. The drawing date will be announced here.
   group_note: One entry for your whole group. Each verified group gets one place in the random drawing; larger groups do not get extra entries. If selected, everyone in your group gets in together.
@@ -73,11 +80,11 @@ visit:
       text: Dress for an outdoor winter evening. Bag rules, permitted items, and admission instructions will be confirmed before the event.
 faq:
   - question: When does the chile drop?
-    answer: The chile drops at midnight Mountain Time as December 31, 2026 becomes January 1, 2027. The full evening schedule will be announced here.
+    answer: The chile drops at midnight Mountain Time as December 31, 2026 becomes January 1, 2027. The Hot Spot opens at 9 p.m., and alcohol sales stop at 11:30 p.m.
   - question: Where is the event?
     answer: At Hotel Zazz in Nob Hill, Albuquerque, New Mexico. Public viewing points and the entrance map are coming soon.
   - question: What is the Hot Spot?
-    answer: The Hot Spot is the controlled-access area close to the chile and the music. Enter the free drawing for a chance at admission for your whole group. Drinks and other purchases are separate.
+    answer: The Hot Spot brings together alcohol sales, music, and a close-up view of the chile drop at Hotel Zazz. It opens at 9 p.m. Alcohol sales stop at 11:30 p.m., ahead of the midnight drop. Enter the free drawing for a chance at admission for your whole group. Drinks are purchased separately and are not included with admission.
   - question: Can I watch without Hot Spot access?
     answer: Yes. People outside the controlled-access area can watch from public vantage points. We'll share the confirmed viewing map before the event.
   - question: Can my family or group stay together?

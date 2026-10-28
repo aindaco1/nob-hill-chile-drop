@@ -3,7 +3,7 @@ description: A New Mexico welcome to the new year. Join the Nob Hill Chile Drop 
 url: https://aindaco1.github.io
 baseurl: /nob-hill-chile-drop
 lang: en-US
-asset_version: "20261027"
+asset_version: "20261028-2"
 preview: true
 theme: null
 api_base: https://nob-hill-chile-drop-api.jogo.workers.dev
