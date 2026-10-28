@@ -1,0 +1,33 @@
+title: Nob Hill Chile Drop
+description: A New Mexico welcome to the new year. Join the Nob Hill Chile Drop at Hotel Zazz in Albuquerque on December 31, 2026.
+url: https://aindaco1.github.io
+baseurl: /nob-hill-chile-drop
+lang: en-US
+asset_version: "20261027"
+preview: true
+theme: null
+api_base: https://nob-hill-chile-drop-api.jogo.workers.dev
+markdown: kramdown
+sass:
+  style: compressed
+  sass_dir: assets/css
+exclude:
+  - AGENTS.md
+  - README.md
+  - LICENSE
+  - Gemfile
+  - Gemfile.lock
+  - package.json
+  - package-lock.json
+  - playwright.config.js
+  - platform.json
+  - node_modules
+  - vendor
+  - shared
+  - scripts
+  - tests
+  - docs
+  - test-results
+  - playwright-report
+  - work
+  - api

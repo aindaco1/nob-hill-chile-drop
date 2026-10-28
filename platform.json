@@ -1,0 +1,12 @@
+{
+  "release": "v0.44.0",
+  "commit": "ad2be4580fc05978e7d8d05c93c3038c13e09876",
+  "packages": {
+    "site-shell": "0.4.0",
+    "design-core": "0.3.0",
+    "build-core": "0.2.0",
+    "test-core": "0.4.0",
+    "admin-shell": "0.14.0",
+    "worker-core": "0.15.0"
+  }
+}

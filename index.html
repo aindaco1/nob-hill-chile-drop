@@ -1,0 +1,52 @@
+---
+layout: default
+form_script: /assets/js/entry.js
+---
+{% assign e = site.data.event %}
+<section class="hero wrap" aria-labelledby="hero-title">
+  <div class="hero__copy">
+    <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>{{ e.hero.eyebrow }}</p>
+    <h1 id="hero-title">{{ e.hero.line_one }}<br><span>{{ e.hero.line_two }}</span></h1>
+    <p class="hero__intro">{{ e.hero.description }}</p>
+    <div class="hero__actions"><a class="button button--lime" href="#hot-spot">{{ e.hero.primary_label }} <span aria-hidden="true">↗</span></a><a class="text-link" href="#watch">{{ e.hero.secondary_label }} <span aria-hidden="true">↓</span></a></div>
+    <div class="hero__details"><span>{{ e.date }}<br><strong>{{ e.time_label }}</strong></span><span>{{ e.venue }}<br><strong>Nob Hill · Albuquerque</strong></span></div>
+  </div>
+  <div class="hero__art">
+    <span class="hero__year" aria-hidden="true">2027</span>
+    <img src="{{ '/assets/art/chile-sign.svg' | relative_url }}" width="640" height="700" alt="An illustrated red chile wrapped in lime lights, suspended inside a blue neon ring." fetchpriority="high">
+    <span class="hero__stamp" aria-hidden="true">LOCAL<br>FLAVOR.<br><span>GLOBAL COUNTDOWN.</span></span>
+    <p class="hero__art-caption">The countdown comes with a kick.</p>
+  </div>
+</section>
+<section class="countdown-strip" aria-labelledby="countdown-title">
+  <div class="wrap countdown-strip__inner">
+    <div><p class="eyebrow">Goodbye 2026. Hello 2027.</p><h2 id="countdown-title">Until the chile drops</h2></div>
+    <div class="countdown" data-countdown="{{ e.drop_at }}" role="timer" aria-label="Countdown to midnight Mountain Time on January 1, 2027">
+      {% assign units = 'Days,Hours,Minutes,Seconds' | split: ',' %}{% for unit in units %}<div><strong data-time="{{ unit | downcase }}">—</strong><span>{{ unit }}</span></div>{% endfor %}
+    </div>
+    <p class="countdown-strip__date">December 31 <span aria-hidden="true">↘</span><br><strong>See you at midnight.</strong></p>
+  </div>
+  <noscript><p class="no-js-countdown">The chile drops January 1, 2027 at 12:00 a.m. Mountain Time.</p></noscript>
+</section>
+<section class="celebration section wrap" id="celebration" aria-labelledby="celebration-title">
+  <div class="section-heading"><p class="eyebrow">{{ e.celebration.eyebrow }}</p><h2 id="celebration-title">{{ e.celebration.title }}</h2><p>{{ e.celebration.description }}</p></div>
+  <div class="celebration__details">{% for item in e.celebration.details %}<article><span class="item-number">{{ item.number }} /</span><h3>{{ item.title }}</h3><p>{{ item.text }}</p></article>{% endfor %}</div>
+</section>
+<section class="hot-spot" id="hot-spot" aria-labelledby="hot-spot-title">
+  <div class="wrap hot-spot__inner">
+    <div class="hot-spot__copy"><p class="eyebrow">The Hot Spot · Up close at midnight</p><h2 id="hot-spot-title">{{ e.access.heading }}</h2><p class="lead">{{ e.access.description }}</p><ul class="benefits">{% for benefit in e.access.benefits %}<li><span aria-hidden="true">↗</span>{{ benefit }}</li>{% endfor %}</ul></div>
+    <aside class="access-pass entry-card" aria-labelledby="pass-title"><div class="access-pass__top"><span class="eyebrow">Nob Hill Chile Drop</span><span aria-hidden="true">✳</span></div><p class="access-pass__edition">NEW YEAR'S EVE / {{ e.edition }}</p><h3 id="pass-title">One entry.<br>Your whole group.</h3><p>{{ e.access.group_note }}</p><div class="access-pass__tear" aria-hidden="true"></div><p class="access-status"><span class="status-dot" aria-hidden="true"></span>{{ e.access.status }}</p><p class="access-pass__notice">{{ e.access.notice }}</p>{% include entry-form.html %}</aside>
+  </div>
+</section>
+<section class="watch section wrap" id="watch" aria-labelledby="watch-title">
+  <div class="watch__symbol" aria-hidden="true"><span>3</span><span>2</span><span>1</span><svg viewBox="0 0 100 100"><path d="M50 2v96M2 50h96M16 16l68 68M16 84l68-68"/></svg></div>
+  <div><p class="eyebrow">{{ e.viewing.eyebrow }}</p><h2 id="watch-title">{{ e.viewing.title }}</h2><p class="lead">{{ e.viewing.description }}</p><p class="muted">{{ e.viewing.note }}</p><a class="text-link" href="#visit">Plan your night <span aria-hidden="true">↘</span></a></div>
+</section>
+<section class="film section" id="film" aria-labelledby="film-title">
+  <div class="wrap film__inner"><div class="film__visual" {% if e.film.youtube_id != empty %}data-youtube-id="{{ e.film.youtube_id }}" data-youtube-title="{{ e.film.title | escape }}"{% endif %}><img src="{{ e.film.poster | relative_url }}" width="640" height="700" alt="An illustrated neon chile sign." loading="lazy">{% if e.film.youtube_id != empty %}<button class="film__play button button--lime" type="button" data-youtube-play>Play event film <span aria-hidden="true">▶</span></button><noscript><a class="film__fallback button button--lime" href="https://www.youtube.com/watch?v={{ e.film.youtube_id }}">Watch event film</a></noscript>{% else %}<span class="film__label">From the neighborhood, with heat.</span>{% endif %}</div><div class="film__copy"><p class="eyebrow">The sights. The sound. The chile.</p><h2 id="film-title">{{ e.film.title }}</h2><p class="lead">{{ e.film.description }}</p><p class="muted">{{ e.film.caption }}</p><a class="text-link" href="{{ e.instagram }}" rel="external">See it on Instagram <span aria-hidden="true">↗</span></a></div></div>
+</section>
+<section class="visit section wrap" id="visit" aria-labelledby="visit-title">
+  <div class="visit__heading"><p class="eyebrow">Plan your night</p><h2 id="visit-title">{{ e.visit.title }}</h2><div class="venue"><span class="venue__pin" aria-hidden="true">↗</span><div><h3>{{ e.venue }}</h3><p>{{ e.location }}</p><a class="text-link" href="{{ e.maps_url }}" rel="external">Get directions <span aria-hidden="true">↗</span></a></div></div><a class="calendar-link" href="{{ '/event.ics' | relative_url }}" download>Add the midnight drop to your calendar <span aria-hidden="true">+</span></a><p class="small muted">The calendar marks the drop. Arrival times will be announced separately.</p></div><div class="visit__details">{% for item in e.visit.details %}<article><h3>{{ item.title }}</h3><p>{{ item.text }}</p></article>{% endfor %}</div>
+</section>
+<section class="faq section wrap" aria-labelledby="faq-title"><div><p class="eyebrow">A few things to know</p><h2 id="faq-title">Good questions.<br>Warm answers.</h2></div><div>{% for item in e.faq %}<details><summary>{{ item.question }}<span aria-hidden="true">+</span></summary><p>{{ item.answer }}</p></details>{% endfor %}</div></section>
+<section class="closing"><div class="wrap"><p class="eyebrow">December 31 · Hotel Zazz · Albuquerque</p><h2>Meet you<br>at <span>midnight.</span></h2><a class="button button--lime" href="#hot-spot">Enter the free drawing <span aria-hidden="true">↗</span></a><p>Bring your people. We'll bring the chile.</p></div><span class="closing__star" aria-hidden="true">✳</span></section>

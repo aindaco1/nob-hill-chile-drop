@@ -1,0 +1,25 @@
+{% assign canonical = page.url | absolute_url %}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title | escape }} | New Year's Eve in Albuquerque</title>
+  <meta name="description" content="{{ site.description | escape }}">
+  <meta name="theme-color" content="#101921">
+  <meta name="color-scheme" content="dark light">
+  {% if site.preview or page.form_script contains "admin" or page.form_script contains "manage-entry" %}<meta name="robots" content="noindex,follow">{% endif %}
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="canonical" href="{{ canonical }}">
+  <link rel="icon" href="{{ '/assets/art/favicon.svg' | relative_url }}" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ site.title }}">
+  <meta property="og:title" content="{{ site.title }} — New year. More heat.">
+  <meta property="og:description" content="{{ site.description | escape }}">
+  <meta property="og:url" content="{{ canonical }}">
+  <meta property="og:image" content="{{ '/assets/art/social-card.png' | absolute_url }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nob Hill Chile Drop. December 31, 2026 at Hotel Zazz, Albuquerque.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="{{ '/assets/fonts/barlow-condensed-latin-700-normal.woff2' | relative_url }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}?v={{ site.asset_version }}">
+</head>

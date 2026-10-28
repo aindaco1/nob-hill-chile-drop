@@ -1,0 +1,90 @@
+name: Nob Hill Chile Drop
+edition: "2026 → 2027"
+date: December 31, 2026
+date_short: Dec 31, 2026
+drop_at: "2027-01-01T00:00:00-07:00"
+timezone: America/Denver
+time_label: Midnight · Mountain Time
+venue: Hotel Zazz
+location: Nob Hill, Albuquerque, New Mexico
+maps_url: https://www.google.com/maps/search/?api=1&query=Hotel+Zazz+Albuquerque+New+Mexico
+instagram: https://www.instagram.com/nobhillchiledrop/
+navigation:
+  - label: The celebration
+    anchor: celebration
+  - label: The Hot Spot
+    anchor: hot-spot
+  - label: Plan your night
+    anchor: visit
+hero:
+  eyebrow: A New Mexico kind of New Year's Eve
+  line_one: New year.
+  line_two: More heat.
+  description: A giant chile. A neighborhood countdown. One very Albuquerque way to welcome the new year.
+  primary_label: Enter the free drawing
+  secondary_label: Just here for the drop?
+celebration:
+  eyebrow: Big chile. Bigger celebration.
+  title: A little local flavor.<br>A whole new year.
+  description: When the clock strikes midnight, Nob Hill brings the heat. Gather at Hotel Zazz for the chile drop and ring in 2027 with your neighbors, your people, and a little New Mexico magic.
+  details:
+    - number: "01"
+      title: The midnight moment
+      text: Count down together as the chile makes its descent to welcome the new year.
+    - number: "02"
+      title: Right here in Nob Hill
+      text: A celebration at Hotel Zazz, in the heart of Albuquerque's Route 66 neighborhood.
+    - number: "03"
+      title: Make a night of it
+      text: Bring your people, bundle up, and enjoy the neighborhood. The full evening schedule is coming soon.
+access:
+  name: The Hot Spot
+  status: Free drawing · 2,000 guest capacity
+  heading: Get closer<br>to the countdown.
+  description: The Hot Spot is the planned controlled-access area, bringing guests close to the chile and the music for the midnight moment.
+  benefits:
+    - A close-up view of the chile drop
+    - Music and the atmosphere at the heart of the celebration
+    - Planned beverage sales; purchases are separate
+    - A chance to be part of the event coverage
+  notice: No purchase or payment details required. Entry is a chance for Hot Spot admission, not a confirmed reservation. The drawing date will be announced here.
+  group_note: One entry for your whole group. Each verified group gets one place in the random drawing; larger groups do not get extra entries. If selected, everyone in your group gets in together.
+viewing:
+  eyebrow: One countdown. Two ways to be there.
+  title: You don't have to be<br>in the Hot Spot to watch.
+  description: The chile drop can also be watched from public vantage points outside the controlled-access area. You don't need Hot Spot access to join the neighborhood countdown.
+  note: The public viewing map and street access information will be shared before the event.
+film:
+  title: A taste of the drop.
+  description: Follow along as Nob Hill gets ready for its midnight moment.
+  youtube_id: ""
+  poster: /assets/art/chile-sign.svg
+  caption: Event footage is coming soon. In the meantime, see the latest from Nob Hill Chile Drop on Instagram.
+visit:
+  title: Your night,<br>with a little less guesswork.
+  details:
+    - title: Getting here
+      text: Hotel Zazz in Nob Hill, Albuquerque. Plan your route and allow time to walk to the event.
+    - title: Parking & street access
+      text: Confirmed parking options, street closures, and public viewing locations will be posted here before the event.
+    - title: Accessibility & facilities
+      text: Accessible arrival routes, viewing information, and restroom locations will be shared with the final event guide.
+    - title: What to bring
+      text: Dress for an outdoor winter evening. Bag rules, permitted items, and admission instructions will be confirmed before the event.
+faq:
+  - question: When does the chile drop?
+    answer: The chile drops at midnight Mountain Time as December 31, 2026 becomes January 1, 2027. The full evening schedule will be announced here.
+  - question: Where is the event?
+    answer: At Hotel Zazz in Nob Hill, Albuquerque, New Mexico. Public viewing points and the entrance map are coming soon.
+  - question: What is the Hot Spot?
+    answer: The Hot Spot is the controlled-access area close to the chile and the music. Enter the free drawing for a chance at admission for your whole group. Drinks and other purchases are separate.
+  - question: Can I watch without Hot Spot access?
+    answer: Yes. People outside the controlled-access area can watch from public vantage points. We'll share the confirmed viewing map before the event.
+  - question: Can my family or group stay together?
+    answer: Yes. Enter once for your whole group, including yourself. Groups are selected together; nobody in a selected group is split off to fill the remaining space. There is one group entry per email address.
+  - question: How does the free drawing work?
+    answer: Confirm your email to make your group entry eligible. Each verified group entry gets one place in a random order, regardless of group size. Groups are selected in that order up to the 2,000-person capacity. Selection stops when the next whole group won't fit; that group and all later groups remain on the waitlist. There is no payment to enter or to receive selected admission.
+  - question: When will I hear about the drawing?
+    answer: The drawing date is still to be announced. After organizers close entries and review the drawing, selected groups will be notified by email. Every group can use its private entry link to check the result.
+  - question: Is there a livestream?
+    answer: Coverage is being planned. The viewing link and confirmed broadcast schedule will appear here when they're ready.

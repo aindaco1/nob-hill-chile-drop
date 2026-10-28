@@ -1,0 +1,24 @@
+name = "nob-hill-chile-drop-api"
+account_id = "fee6147787ab9025e9fd8e6e8fd76910"
+main = "src/worker.js"
+compatibility_date = "2026-10-27"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://aindaco1.github.io"
+PUBLIC_SITE_URL = "https://aindaco1.github.io/nob-hill-chile-drop"
+ADMIN_EMAILS = "alonso@dustwave.xyz"
+REPORT_EMAIL = "alonso@dustwave.xyz"
+EMAIL_FROM = "Nob Hill Chile Drop <events@dustwave.xyz>"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nob-hill-chile-drop"
+database_id = "7afb3b21-843c-4967-bda4-edc5272e9a3c"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["* * * * *", "0 16 * * MON"]
+
+# Secrets: RESEND_API_KEY, OUTBOX_ENCRYPTION_KEY (32-byte base64url key).
+# Keep credentials out of this file and the GitHub Pages build.
