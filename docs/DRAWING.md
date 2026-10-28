@@ -74,6 +74,8 @@ Required secrets:
 - `RESEND_API_KEY`: key permitted to send from the verified `dustwave.xyz` domain.
 - `OUTBOX_ENCRYPTION_KEY`: 32 random bytes encoded as base64url (43 characters). Keep a secure backup. Do not rotate while messages are pending without migrating their encrypted payloads.
 
+The initial provisioning saved a private backup in ignored `api/.secrets/production.env` with owner-only permissions. This is deliberately outside Wrangler's automatically loaded `.dev.vars` path. Never copy production credentials into local test configuration.
+
 Configured variables: `ALLOWED_ORIGINS=https://aindaco1.github.io`, `PUBLIC_SITE_URL=https://aindaco1.github.io/nob-hill-chile-drop`, `ADMIN_EMAILS=alonso@dustwave.xyz`, `REPORT_EMAIL=alonso@dustwave.xyz`, `EMAIL_FROM=Nob Hill Chile Drop <events@dustwave.xyz>`. Email replies go to `REPORT_EMAIL`.
 
 ```sh
@@ -97,6 +99,8 @@ GitHub Pages cannot host Worker secrets or D1. Validate the deployed `/health`, 
 Encrypted D1 outbox payloads contain the immutable message, including any one-time link; the token table stores only SHA-256 hashes. AES-GCM authenticates each payload to its job ID. Sent/expired unattempted payloads are erased. Admin/entry link creation queues the token and email in one D1 transaction. Winner publication inserts ID-only jobs with deterministic `winner:<draw UUID>:<entry UUID>` keys in the same transaction as publication. The dispatcher reads the locked entry and freezes/encrypts its winner message before the first send. All retries use that exact stored payload. Privacy erasure suppresses an unsent winner job.
 
 Each job uses a canonical stable ID as its Resend idempotency key. A database compare-and-set lease prevents concurrent workers from sending the same job. Network, conflict, rate-limit and server errors retry with bounded exponential backoff; a crash after provider acceptance reuses the same key. Retries stop after 23 hours from the first attempt, before Resend's 24-hour deduplication window ends; uncertain messages become `needs_review`. Do not blindly reset them or change their idempotency key. Reconcile provider records before any manual resend. `sent` means **provider accepted**, not delivered, and there is no delivery-webhook integration in this release.
+
+Provider requests use Workers-compatible `redirect: 'manual'`; redirects are rejected without forwarding credentials. Failure evidence contains only the processing stage and an allowlisted error name or HTTP status, never raw exception messages or email contents.
 
 The every-minute cron drains up to 10 messages per invocation, with a 20-second processing budget and bounded provider deadlines. Expiring admin/entry links take priority over reports and winner messages, so a winner backlog cannot consume their validity window. A full 2,000-group winner batch takes about 3 hours 20 minutes at that rate, longer if quota or provider errors intervene. Entry/admin link requests also attempt queued mail promptly in background; publishing delegates delivery to the cron to keep request work bounded. The admin outbox totals expose queued, sent, failed, suppressed, expired and needs-review counts. Review provider sending limits before publishing winners. A blocked email never rewrites committed drawing results.
 

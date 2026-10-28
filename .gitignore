@@ -17,6 +17,7 @@ test-results/
 # macOS
 .DS_Store
 .dev.vars
+.secrets/
 .wrangler/
 *.pem
 .AppleDouble
