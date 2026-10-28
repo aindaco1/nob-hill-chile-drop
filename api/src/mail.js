@@ -7,6 +7,7 @@ import { readBoundedJson } from '../../shared/dust-wave-platform/packages/worker
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const HOUR = 3_600_000;
+const SAFE_ERROR_NAMES = new Set(['Error', 'TypeError', 'SyntaxError', 'AbortError', 'TimeoutError', 'OperationError', 'DataError', 'InvalidCharacterError', 'NotSupportedError']);
 
 function decode(value) {
   return Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
@@ -103,35 +104,52 @@ export async function dispatchOutbox(env, { fetchTarget = globalThis.fetch, now 
     if (!job) continue;
     attempted += 1;
     let failure;
+    let stage = 'materialize';
+    let evidence;
     try {
       // Publication queues only IDs. Freeze the private winner email exactly once
       // before its first send; subsequent retries decrypt the identical payload.
       if (job.kind === 'winner' && !job.payload && !await materializeWinner(env, job)) continue;
+      stage = 'decrypt';
       const payload = await decodePayload(env, job.payload, job.id);
-      const response = await fetchTarget('https://api.resend.com/emails', {
+      stage = 'request_setup';
+      const requestInit = {
         method: 'POST',
-        redirect: 'error',
+        // Workers does not implement redirect:'error'. Manual never follows a
+        // redirect, so the Authorization header stays on Resend's fixed origin.
+        redirect: 'manual',
         signal: AbortSignal.timeout(Math.max(1, Math.min(12_000, deadline - now()))),
         headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': job.id },
         body: JSON.stringify(payload)
-      });
+      };
+      stage = 'fetch';
+      // Preserve the native global receiver in runtimes whose fetch checks it.
+      const response = await fetchTarget.call(globalThis, 'https://api.resend.com/emails', requestInit);
       if (response.ok) {
+        stage = 'receipt';
         const result = await readBoundedJson(response, 16_384);
         if (typeof result.id !== 'string' || !result.id) throw new Error('Invalid provider receipt');
+        stage = 'persist_receipt';
         await env.DB.prepare(`UPDATE outbox SET status='sent',provider_id=?,payload='',lease_until=NULL,lease_token=NULL,last_error=NULL
           WHERE id=? AND lease_token=?`).bind(result.id.slice(0, 128), job.id, lease).run();
         accepted += 1;
         continue;
       }
       failure = classifyResendFailure(response.status, { retryAfter: response.headers.get('retry-after'), nowMs: timestamp });
-      await response.body?.cancel();
-    } catch {
+      evidence = `provider_${failure.statusCode}`;
+      // Body cancellation must not erase an observed provider HTTP status.
+      try { await response.body?.cancel(); } catch { /* Status is already known. */ }
+    } catch (error) {
       failure = classifyResendFailure(0);
+      // Error messages/causes may include URLs, recipients or credentials. Never
+      // persist or log them; fixed stages and allowlisted names are enough here.
+      const name = SAFE_ERROR_NAMES.has(error?.name) ? error.name : 'Error';
+      evidence = `${stage}:${name}`;
     }
     const status = failure.retryable ? 'queued' : 'failed';
     const due = timestamp + outboxRetryDelayMs(failure, job.attempts, { maximumMs: HOUR });
     await env.DB.prepare(`UPDATE outbox SET status=?,next_attempt_at=?,lease_until=NULL,lease_token=NULL,last_error=?
-      WHERE id=? AND lease_token=?`).bind(status, due, `provider_${failure.statusCode}`, job.id, lease).run();
+      WHERE id=? AND lease_token=?`).bind(status, due, evidence, job.id, lease).run();
   }
   return { accepted, attempted };
 }

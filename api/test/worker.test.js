@@ -286,3 +286,54 @@ test('lazy winner materialization freezes the payload before an uncertain send a
   assert.equal(winnerAttempts.length, 2);
   assert.equal(winnerAttempts[0].body, winnerAttempts[1].body);
 });
+
+test('provider transport preserves the native global receiver', async t => {
+  const f = fixture(); t.after(f.close);
+  const job = await prepareMail(f.env, { kind: 'test', key: 'native-fetch', to: 'nobody@example.test', subject: 'Test', text: 'Test only', now: f.now() });
+  await mailStatement(f.env, job).run();
+  let receiver;
+  await dispatchOutbox(f.env, { ...f.dependencies, fetchTarget: async function () {
+    receiver = this;
+    return Response.json({ id: 'accepted' });
+  } });
+  assert.equal(receiver, globalThis);
+  assert.equal(f.DB.prepare('SELECT status FROM outbox WHERE id=?').bind(job.id).first().status, 'sent');
+});
+
+test('mail failure evidence names only safe stages and allowlisted error names', async t => {
+  const f = fixture(); t.after(f.close);
+  const job = await prepareMail(f.env, { kind: 'test', key: 'safe-error', to: 'nobody@example.test', subject: 'Test', text: 'Test only', now: f.now() });
+  await mailStatement(f.env, job).run();
+  await dispatchOutbox(f.env, { ...f.dependencies, fetchTarget: async () => {
+    const error = new Error('secret recipient and token must never appear');
+    error.name = 'recipient@example.test';
+    throw error;
+  } });
+  assert.equal(f.DB.prepare('SELECT last_error FROM outbox WHERE id=?').bind(job.id).first().last_error, 'fetch:Error');
+  f.advance(3 * 60_000);
+  await dispatchOutbox(f.env, { ...f.dependencies, fetchTarget: async () => new Response('not JSON', { status: 200 }) });
+  assert.equal(f.DB.prepare('SELECT last_error FROM outbox WHERE id=?').bind(job.id).first().last_error, 'receipt:SyntaxError');
+  f.advance(5 * 60_000);
+  f.DB.prepare("UPDATE outbox SET payload='invalid.payload' WHERE id=?").bind(job.id).run();
+  await dispatchOutbox(f.env, f.dependencies);
+  assert.match(f.DB.prepare('SELECT last_error FROM outbox WHERE id=?').bind(job.id).first().last_error, /^decrypt:(OperationError|InvalidCharacterError)$/);
+  assert.equal(f.calls.length, 0);
+});
+
+test('Worker-compatible manual redirects never follow a provider redirect or forward credentials', async t => {
+  const f = fixture(); t.after(f.close);
+  const job = await prepareMail(f.env, { kind: 'test', key: 'no-redirect', to: 'nobody@example.test', subject: 'Test', text: 'Test only', now: f.now() });
+  await mailStatement(f.env, job).run();
+  const calls = [];
+  await dispatchOutbox(f.env, { ...f.dependencies, fetchTarget: async (url, init) => {
+    if (init.redirect === 'error') throw new TypeError('Invalid redirect value');
+    assert.equal(init.redirect, 'manual');
+    calls.push(url);
+    return new Response(null, { status: 307, headers: { Location: 'https://untrusted.example.test' } });
+  } });
+  assert.deepEqual(calls, ['https://api.resend.com/emails']);
+  const stored = f.DB.prepare('SELECT status,last_error,provider_id FROM outbox WHERE id=?').bind(job.id).first();
+  assert.equal(stored.status, 'failed');
+  assert.equal(stored.last_error, 'provider_307');
+  assert.equal(stored.provider_id, null);
+});
