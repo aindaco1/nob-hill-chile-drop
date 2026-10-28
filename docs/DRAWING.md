@@ -1,119 +1,82 @@
 # Free group drawing
 
-The Chile Drop Worker owns free drawing entries, verified email ownership, administration, random selection and operational email. It has no prices, payment processing, paid entries or admission purchases. The public site is static GitHub Pages; the Worker and D1 are separate services.
+[Documentation index](../README.md) · [API reference](API.md) · [Email and deployment operations](OPERATIONS.md)
 
-The canonical event is December 31, 2026 at Hotel Zazz, Albuquerque. Midnight is `2027-01-01T00:00:00-07:00` in `America/Denver`.
+This guide describes the implemented behavior. The public-facing version is [drawing-rules.html](../drawing-rules.html). Entry and selected admission are free; an entry is not a confirmed reservation. The earlier paid-chance/cart proposal is superseded.
 
-## Reuse and boundaries
+## Guest lifecycle
 
-The site pins Dust Wave Platform at `ad2be4580fc05978e7d8d05c93c3038c13e09876` (Platform v0.44.0). The API imports worker-core's request validation, random tokens/checksums, automatic email headers, canonical outbox IDs/retry delay, Resend error classification and bounded response readers directly from that pin. Its domain schema, rules, authorization and D1 persistence remain consumer-owned.
+1. Submit a name, email, group size including the entrant, and agreement to the rules. The size must be an integer from 1 through 2,000.
+2. Confirm the email through the single-use link. Only verified entries participate. Email is trimmed/lowercased and unique; submitting an existing email sends access to its owner without overwriting their group.
+3. Use the private entry page to change name/size while registration is open. Changing the email address is not supported by this form/API.
+4. After registration closes, no new entries, first-time verifications or group edits are accepted. Already-verified owners can still request a link to see their status.
+5. After publication, selected groups receive an email. Every verified entrant can view their own selected/waitlisted status privately. Unselected groups do not receive a separate results email in the current implementation.
 
-Store's RSVP flow was reviewed as a precedent. It currently confirms admission immediately, supports a maximum configured party size of 20, and does not implement random selection or a capacity-aware waitlist. Using that confirmed-RSVP flow for these drawing entries would misrepresent admission. No Store source or unrelated Store changes were copied. Future confirmed-winner ticket/check-in integration can use Store after an explicit integration design.
+One entry per email is an ownership/deduplication rule, not proof of one real person or household. There is no stronger identity or cross-address duplicate detection. Link lifetime and rate limits are in [API](API.md).
 
-## Rules implemented
+## Selection algorithm
 
-- Registration starts **open**, per the organizer's instruction; closing and drawing are manual. The public config fails closed when email secrets are missing.
-- Each normalized email address has one group of 1–2,000 people. Normalization trims whitespace and lowercases; it does not claim that multiple email addresses identify one person.
-- The initial submission records explicit entry consent and emails a one-time verification link. Only verified entries are eligible. Re-submitting an address never overwrites its group; the verified owner can edit while entries remain open.
-- Capacity defaults to 2,000 and cannot exceed 2,000. Close registration before preparing the drawing. Closing also ends first-time verification and group edits. Existing verified owners can still sign in and see private status.
-- Fisher–Yates uses cryptographic random integers with rejection sampling. Each group receives one uniformly random position, regardless of its size. Select whole groups in that order, stopping at the **first** group that cannot fit. That group and all later groups form the waitlist. Unused capacity is possible. No automatic promotion or partial admission occurs.
-- Equal random rank is not a guarantee of identical final admission probability for different group sizes: the capacity rule affects which complete groups fit. Public copy should describe the method rather than promise identical final odds.
-- Preparing persists one immutable random order. Repeated/concurrent previews return that same order; reopening registration and changing capacity are then locked. There is no reroll endpoint. Preview contains private names/emails for operator review.
-- Committing the reviewed preview atomically stores one draw and its results. Retrying commit does not rerun it. Results remain private until the administrator explicitly publishes. Publishing exposes **counts only** publicly and queues one winner email per selected, non-erased group. Individual status is accessible only through the owner's private token.
-- Selection grants free Hot Spot admission for the entire group. It does not issue a QR code, hotel wristband, alcohol purchase or check-in entitlement. Arrival/check-in instructions remain an organizer follow-up.
+[`api/src/drawing.js`](../api/src/drawing.js) uses Fisher–Yates with cryptographic random values and rejection sampling to avoid modulo bias. Each verified group receives one position in the random order regardless of size.
 
-## API contract
+Starting at rank 1, select each whole group while it fits. **At the first group that would exceed capacity, stop.** That group and every later group are waitlisted, even if a later smaller group would fit. Capacity is at most 2,000. No group is split and there is no automatic promotion.
 
-API base: `https://nob-hill-chile-drop-api.jogo.workers.dev`. All responses are `private, no-store` and `noindex`. JSON writes require `Content-Type: application/json` and an exact allowed `Origin`. The maximum body is 8 KiB. Error bodies are `{error,code}` with appropriate 4xx/503 statuses.
+Example with capacity 10:
 
-| Method and route | Request / response |
+| Rank | Group size | Result | Guests selected so far |
+| --- | --- | --- | --- |
+| 1 | 4 | Selected | 4 |
+| 2 | 5 | Selected | 9 |
+| 3 | 2 | Waitlisted; selection stops | 9 |
+| 4 | 1 | Waitlisted; cannot skip ahead | 9 |
+
+One place remains unused. Every group has an equal chance at each rank, but unequal sizes can have different final admission probabilities. Do not describe the algorithm as equal odds of admission per group or as maximizing occupancy.
+
+## Organizer workflow
+
+The [organizer desk](https://aindaco1.github.io/nob-hill-chile-drop/admin/) uses the email allowlist in Worker configuration. Currently the organizer and report recipient are `alonso@dustwave.xyz`. Requesting a login link sends email; do not use it for unattended smoke tests.
+
+| Step | Action and consequence |
 | --- | --- |
-| `GET /health` | `{ok,emailConfigured}`; reads D1 but reveals no credentials |
-| `GET /api/config` | `{registrationOpen,capacity,locked,revision,freeEntry:true,priceCents:0,maxGroupSize:2000,consentVersion,resultsPublished,results,eventDate,dropTime,timezone}`; `results` is null or `{selectedOrders,selectedPeople}` |
-| `POST /api/entries` | `{name,email,groupSize,consent:true}` → generic 202 receipt; creates pending entry and queues verification |
-| `POST /api/entries/link` | `{email}` → same generic 202 receipt; sends a link only for an existing entry; works after closing |
-| `POST /api/entries/verify` | `{token}` → `{accessToken,expiresAt,entry}` |
-| `GET /api/entries/status` | Entry Bearer token → `{entry}` |
-| `PATCH /api/entries` | Entry Bearer token + `{name,groupSize,consent:true}` → `{entry}`; email cannot change |
-| `POST /api/admin/login` | `{email}` → generic 202; only configured administrators receive a link |
-| `POST /api/admin/verify` | `{token}` → `{accessToken,expiresAt}` |
-| `GET /api/admin/entries?limit=50&offset=0` | Admin Bearer token → paged entries, counts, settings, preview/draw summaries and outbox counts; limit 1–200 |
-| `GET /api/admin/entries.csv` | Admin Bearer token → private CSV, with spreadsheet formula prefixes neutralized |
-| `PATCH /api/admin/settings` | Admin Bearer token + `{registrationOpen?,capacity?}` → `{settings}` |
-| `POST /api/admin/draw/preview` | Admin Bearer token + `{}` → persisted preview and private ranked results |
-| `POST /api/admin/draw/commit` | Admin Bearer token + `{previewId}` → `{ok,previewId,committedAt,published}` |
-| `POST /api/admin/draw/publish` | Admin Bearer token + `{}` → `{ok,publishedAt,queuedWinnerEmails}` or `{ok,publishedAt,alreadyPublished:true}` |
-| `DELETE /api/admin/entries/:id` | Admin Bearer token → `{ok,action:'deleted'\|'anonymized'}`; handles a verified privacy request |
+| Review entries | Sign in, inspect verified group/guest totals, paginate entries and review email queue counts. CSV export includes personal data. |
+| Set capacity and close entry | Save the intended capacity and turn off registration. This prevents new registration, edits and first verification. You may reopen **only before preparation**. |
+| Prepare drawing | Confirm the locking notice, then prepare. This immediately saves the random order and capacity and prevents reopening/capacity changes. It is not a disposable preview. |
+| Review fixed result | Review selected/waitlisted totals and unused capacity. Repeating preparation returns the same saved order. The API preview response contains the private rank details; the UI shows totals. |
+| Commit drawing | Saves results from that exact prepared preview; guests still cannot see them and winner notifications have not been queued. Repeating the same commit is idempotent. |
+| Publish | Confirm the publication notice. This exposes private results to entrants and public counts, and atomically queues selected-group notifications. It does not wait for delivery. Repeating publish does not queue duplicates. |
+| Follow through | Check queue/provider status and provide the separately approved arrival/check-in instructions. The application does not issue admission QR codes or check people in. |
 
-An entry is `{id,name,email,groupSize,verified,status,canEdit,createdAt}`. Status is `pending_verification`, `entered`, `selected` or `waitlisted`. Unpublished drawing results are never returned to entry owners.
+Prepare, commit and publish are separate deliberate steps. Nothing schedules or automatically runs the drawing. The configured cron only dispatches mail, cleans expired auth/rate-limit records and queues weekly reports. Closing registration does not cancel a valid already-verified owner's access.
 
-The admin list response is:
+There is no reset/reroll endpoint. Do not delete the preview or change database rows to get a different outcome. If an operational issue arises after preparation, preserve the fixed order and seek an explicit organizer decision before changing its treatment.
 
-```json
-{
-  "entries": [{"id":"uuid","name":"Guest","email":"guest@example.test","groupSize":4,"verified":true,"createdAt":"ISO timestamp","status":"entered","rank":null}],
-  "total": 1,
-  "counts": {"totalOrders":1,"totalPeople":4,"verifiedOrders":1,"verifiedPeople":4},
-  "settings": {"registrationOpen":true,"capacity":2000,"locked":false,"revision":2},
-  "preview": null,
-  "drawing": null,
-  "outbox": {"queued":1}
-}
+## State and concurrency
+
+```mermaid
+flowchart LR
+  Open[Registration open] --> Closed[Registration closed]
+  Closed -->|Before preparation only| Open
+  Closed --> Prepared[Fixed order prepared and locked]
+  Prepared --> Committed[Results committed privately]
+  Committed --> Published[Results published and winner mail queued]
 ```
 
-Preview summary fields are `previewId`, `capacity`, `eligibleOrders`, `selectedOrders`, `selectedPeople`, `waitlistedOrders`, `waitlistedPeople`, `unusedCapacity`. The preview endpoint adds `createdAt` and `results:[{entryId,rank,status,groupSize,name,email}]`. A committed drawing is `{previewId,committedAt,publishedAt:null|string}`.
+Preparation captures a settings/entry revision. The database guards against preparing from a stale revision, and commit requires that same revision with registration closed. Result insertion and publication mail enqueue use batches and unique IDs. Repeating calls after an uncertain HTTP response must recover the same state, not generate a new order or a new winner-mail key.
 
-The emailed URLs are `${PUBLIC_SITE_URL}/entry/#token=...` and `${PUBLIC_SITE_URL}/admin/#token=...`. The browser must remove the fragment after reading it, exchange the token and avoid embedding either token in analytics, links, logs or public content. Session tokens are opaque Bearer credentials, not cookies. Entry links expire after 30 minutes, admin links after 15 minutes; they are consumed atomically once. Entry sessions last 24 hours and admin sessions two hours. The allowlist is rechecked for every admin session request.
+Public results contain only selected group/guest counts. Private entry status hides selected/waitlisted until publication. Admin records and CSV may show committed results before publication; treat them as private.
 
-## Provision and run
+## Privacy requests and exports
 
-The checked-in `api/wrangler.toml` names the Cloudflare account, Worker and provisioned D1 database. Those identifiers are public deployment configuration, not secrets. Parent/project deployment owns production changes.
+Verify the requester's authority to remove an entry before using the admin-only deletion API. The organizer UI currently has no deletion control; [API](API.md) documents `DELETE /api/admin/entries/:id` for an authorized support action.
 
-Required secrets:
+- Before preparation, erasure deletes the entry, removes its tokens and suppresses its queued mail.
+- After preparation, erasure replaces personal details with an anonymous placeholder while preserving group size and the fixed rank/result. Tokens are removed and pending mail is suppressed. Capacity is not automatically reallocated.
+- Sent jobs retain their sent state but lose payload; other recipient-linked jobs are suppressed and cleared. An already accepted or in-flight provider request cannot be recalled by database erasure.
+- CSV exports, provider-held records, backups and inbox copies require separate handling. Do not claim a database operation deleted all external copies.
 
-- `RESEND_API_KEY`: key permitted to send from the verified `dustwave.xyz` domain.
-- `OUTBOX_ENCRYPTION_KEY`: 32 random bytes encoded as base64url (43 characters). Keep a secure backup. Do not rotate while messages are pending without migrating their encrypted payloads.
+CSV export includes IDs, name/email, group size, creation/verification timestamps, result and rank. Timestamp columns are raw epoch milliseconds; entries are ordered by creation time then ID. Formula-like leading cell content is escaped. Store exports privately; do not commit them, add them to Pages or attach them to public issues.
 
-The initial provisioning saved a private backup in ignored `api/.secrets/production.env` with owner-only permissions. This is deliberately outside Wrangler's automatically loaded `.dev.vars` path. Never copy production credentials into local test configuration.
+## Weekly activity
 
-Configured variables: `ALLOWED_ORIGINS=https://aindaco1.github.io`, `PUBLIC_SITE_URL=https://aindaco1.github.io/nob-hill-chile-drop`, `ADMIN_EMAILS=alonso@dustwave.xyz`, `REPORT_EMAIL=alonso@dustwave.xyz`, `EMAIL_FROM=Nob Hill Chile Drop <events@dustwave.xyz>`. Email replies go to `REPORT_EMAIL`.
+Monday `16:00 UTC` reports go to the configured `REPORT_EMAIL` (9 a.m. MST / 10 a.m. MDT). They contain new/total/verified group and guest counts, registration/capacity and outbox status counts. They contain no guest list, sales or payment amounts. Records retained after anonymization remain in totals.
 
-```sh
-cd api
-wrangler secret put RESEND_API_KEY
-wrangler secret put OUTBOX_ENCRYPTION_KEY
-wrangler d1 migrations apply nob-hill-chile-drop --remote
-wrangler deploy
-```
-
-For local development, place test credentials in an ignored `api/.dev.vars` and use a separate local D1 database with `wrangler d1 migrations apply nob-hill-chile-drop --local`. Override origin/site URL to the actual local preview origin. Never connect a local fixture to production Resend. The automated tests use an in-memory SQLite implementation of D1 and a stub provider; they require Node 26.12.1+ and make no external requests:
-
-```sh
-npm test --prefix api
-```
-
-GitHub Pages cannot host Worker secrets or D1. Validate the deployed `/health`, CORS preflight and `/api/config` before making the entry form live. A successful API receipt means the message is queued; it does not prove inbox delivery. Production integration requires a real verified sender, sufficient provider quotas and a confirmed Cloudflare deployment. These are separate from passing local tests.
-
-## Email, reporting and recovery
-
-Encrypted D1 outbox payloads contain the immutable message, including any one-time link; the token table stores only SHA-256 hashes. AES-GCM authenticates each payload to its job ID. Sent/expired unattempted payloads are erased. Admin/entry link creation queues the token and email in one D1 transaction. Winner publication inserts ID-only jobs with deterministic `winner:<draw UUID>:<entry UUID>` keys in the same transaction as publication. The dispatcher reads the locked entry and freezes/encrypts its winner message before the first send. All retries use that exact stored payload. Privacy erasure suppresses an unsent winner job.
-
-Each job uses a canonical stable ID as its Resend idempotency key. A database compare-and-set lease prevents concurrent workers from sending the same job. Network, conflict, rate-limit and server errors retry with bounded exponential backoff; a crash after provider acceptance reuses the same key. Retries stop after 23 hours from the first attempt, before Resend's 24-hour deduplication window ends; uncertain messages become `needs_review`. Do not blindly reset them or change their idempotency key. Reconcile provider records before any manual resend. `sent` means **provider accepted**, not delivered, and there is no delivery-webhook integration in this release.
-
-Provider requests use Workers-compatible `redirect: 'manual'`; redirects are rejected without forwarding credentials. Failure evidence contains only the processing stage and an allowlisted error name or HTTP status, never raw exception messages or email contents.
-
-The every-minute cron drains up to 10 messages per invocation, with a 20-second processing budget and bounded provider deadlines. Expiring admin/entry links take priority over reports and winner messages, so a winner backlog cannot consume their validity window. A full 2,000-group winner batch takes about 3 hours 20 minutes at that rate, longer if quota or provider errors intervene. Entry/admin link requests also attempt queued mail promptly in background; publishing delegates delivery to the cron to keep request work bounded. The admin outbox totals expose queued, sent, failed, suppressed, expired and needs-review counts. Review provider sending limits before publishing winners. A blocked email never rewrites committed drawing results.
-
-Publication uses one SQL `INSERT … SELECT`, followed by the publication timestamp, in a [D1 atomic batch](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch). It performs no per-winner encryption in that HTTP request. At most 10 winner messages are materialized by each dispatcher invocation. Local timing is not production CPU-limit verification; monitor the deployed workload. No paid Workers plan is assumed or enabled.
-
-Monday at 16:00 UTC (10:00 a.m. MDT / 9:00 a.m. MST), the weekly cron queues a deduplicated activity report to Alonso. It reports new/total/verified groups and people, registration status, capacity and mail queue counts; it explicitly reports no sales or payments. It does not email entrant lists. Disable the weekly cron at the campaign's end; there is no implicit closing date or automatic draw.
-
-Before a manual drawing: review eligible/pending counts, close entries, prepare once, inspect capacity/results, commit, then explicitly publish and queue winner emails. There is no background draw, auto-promotion or automatic admission based on an entry receipt.
-
-## Privacy and operational limits
-
-Only the entry owner's token and authorized admins can read personal entry data. CORS matches origins, not URL paths: every page under the GitHub account shares its origin. Do not add third-party scripts to token-handling pages. Bearer sessions prevent ambient cookie/CSRF authentication; no session secret is shipped in the static site.
-
-For a confirmed erasure request, the admin DELETE route removes the entry before random preparation. After preparation it replaces name/email with anonymous placeholders, preserving group size and draw rank so other entrants' outcomes do not change. Both paths revoke entry tokens and suppress stored queued messages. Already accepted or in-flight email cannot be recalled, and provider retention is managed separately. Audit records retain the operator, entry ID and action without copying entrant names, email or request text. D1 backups require the provider's retention cycle; exported CSV files must be managed separately. After the event, the organizer should delete unnecessary personal records and exports.
-
-Authentication, rate limits, bounded input, closed gates, safe ownership updates, token expiry/replay/concurrent consumption, unbiased random rank, whole-group capacity, immutable/atomic draw, private results, CSV injection, publication gating, privacy erasure, outbox leases/retry deduplication and a 2,000-winner batch are covered by the API tests. SQLite tests characterize D1 transactions locally; production D1/Resend operation still needs deployment verification.
+Report creation is deduplicated by UTC date. There is no automatic end date for reports; remove the weekly trigger when the organizer ends the campaign, retaining the mail-dispatch trigger while queued work remains. `sent` means the provider accepted the message, not that it arrived in an inbox. See [Operations](OPERATIONS.md) for recovery and scheduling details.

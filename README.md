@@ -1,16 +1,43 @@
 # Nob Hill Chile Drop
 
-New Year's Eve at Hotel Zazz in Nob Hill, Albuquerque. The chile drops at midnight Mountain Time, welcoming January 1, 2027.
+The website and free group drawing for New Year's Eve at Hotel Zazz in Nob Hill, Albuquerque. Jekyll/Liquid and native browser modules serve the public site; a Cloudflare Worker, D1 and Resend handle entries, organizer access and notifications. GitHub Pages hosts the static build.
 
-- Website: https://aindaco1.github.io/nob-hill-chile-drop/
-- Organizer desk: https://aindaco1.github.io/nob-hill-chile-drop/admin/
-- API: https://nob-hill-chile-drop-api.jogo.workers.dev
+**Future agents: start with [AGENTS.md](AGENTS.md), then [Project decisions and current state](docs/PROJECT.md).** These documents live with the code and should be updated with changes. Earlier meeting notes are background; the free-entry implementation supersedes the paid-entry proposal.
 
-The public site uses ZEMA Landing's Jekyll/Liquid structure and a pinned Dust Wave Platform submodule. A small Cloudflare Worker/D1 service handles the free drawing. GitHub Pages hosts only public static files. No payment information is collected.
+## Project links
 
-## Local development
+| Resource | Location |
+| --- | --- |
+| Public website | [Nob Hill Chile Drop](https://aindaco1.github.io/nob-hill-chile-drop/) |
+| Private entry access | [Manage your group](https://aindaco1.github.io/nob-hill-chile-drop/entry/) |
+| Organizer access | [Organizer desk](https://aindaco1.github.io/nob-hill-chile-drop/admin/) |
+| Source | [GitHub repository](https://github.com/aindaco1/nob-hill-chile-drop) |
+| Deployment checks | [GitHub Actions](https://github.com/aindaco1/nob-hill-chile-drop/actions/workflows/pages.yml) |
+| API health | [Worker health](https://nob-hill-chile-drop-api.jogo.workers.dev/health) |
 
-Use Node 26.12.1+, Ruby with Bundler, and the pinned submodule:
+The working project folder on Alonso's Mac is:
+
+```text
+/Users/aindaco1/Library/Mobile Documents/com~apple~CloudDocs/nob-hill-chile-drop
+```
+
+Inspect its Git status before editing. A chat's scratch directory or a validation clone is not automatically the current project checkout.
+
+## Documentation map
+
+| Read this | For |
+| --- | --- |
+| [AGENTS.md](AGENTS.md) | Agent workflow, constraints and completion checklist |
+| [Project](docs/PROJECT.md) | Confirmed event facts, product decisions, design direction, remaining work and dated verification |
+| [Development](docs/DEVELOPMENT.md) | Setup, safe local testing, content changes and troubleshooting |
+| [Architecture](docs/ARCHITECTURE.md) | File map, Platform reuse, data flow, database and security boundaries |
+| [Drawing](docs/DRAWING.md) | Guest lifecycle, selection rules, organizer steps and privacy requests |
+| [API](docs/API.md) | Routes, authentication, payloads, errors and rate limits |
+| [Operations](docs/OPERATIONS.md) | Deployments, configuration, email recovery, rollback and launch checks |
+
+## Start locally
+
+Use Node **26.12.1** and Ruby **3.3** with Bundler to match CI. From the repository root:
 
 ```sh
 git submodule update --init --recursive
@@ -20,45 +47,15 @@ npx playwright install chromium
 npm run dev
 ```
 
-Open http://127.0.0.1:4173/nob-hill-chile-drop/. The remote API only accepts the production Pages origin; browser tests mock the API. To develop the full service locally, use a separate local D1 database and test email configuration as described in [the drawing guide](docs/DRAWING.md). Do not point test fixtures at production email.
+Open [the local preview](http://127.0.0.1:4173/nob-hill-chile-drop/). `npm run dev` builds once; run `npm run build` after edits. Production CORS does not permit local form submissions. Use the mocked browser tests and isolated API tests described in [Development](docs/DEVELOPMENT.md).
 
 ```sh
 npm test
 npm run api:check
 ```
 
-## Content and design
+A push to `main` runs verification and deploys Pages. **It does not deploy the Worker or migrate D1.** Follow [Operations](docs/OPERATIONS.md) for service changes.
 
-Edit `_data/event.yml` for public event information and `_config.yml` for hosting configuration. Times are explicit Mountain Time, not the visitor's local time. Fonts are self-hosted Barlow Condensed and DM Sans under their OFL licenses; build preparation copies the license files alongside them. The original SVG chile illustration and navy, lime, red, cream and blue palette take inspiration from the event's Instagram neon sign. No Instagram photos or old event details were copied.
+## Prompt for the next agent
 
-Add an approved YouTube ID to `film.youtube_id` when footage is ready. The footage section stays hidden until a video is supplied; its player loads only on a visitor's click. Parking, accessible routes and the public viewing map remain unconfirmed. Set `preview: false` when the final public launch should be indexed. No custom domain is configured.
-
-## Drawing operations
-
-Free entries start open. Each verified email holds one whole group, with no extra entries for a larger group. The initial capacity is 2,000 people. Selection follows a fixed, uniformly random order and stops before the next whole group would exceed capacity; unused spaces are possible. Equal random rank does not mean identical admission probability for differently sized groups.
-
-Sign in at `/admin/` using `alonso@dustwave.xyz`. Close registration manually, prepare the random order once, review totals, commit, then publish and queue winner notifications. The drawing never runs automatically. Weekly activity reports go to the same address on Mondays at 16:00 UTC. Public results show only counts; guests use their private email link for their own status.
-
-See [docs/DRAWING.md](docs/DRAWING.md) for API contracts, mail retries, privacy requests, selection details and deployment commands. Store RSVP was reviewed: it immediately confirms admission, so its consumer-specific RSVP workflow is not used for unselected drawing entries. Shared Platform primitives are reused directly.
-
-## Deployment
-
-Push to `main` to run tests and deploy GitHub Pages through `.github/workflows/pages.yml`. API changes are deployed separately after tests:
-
-```sh
-npm run api:check
-npm --prefix api run migrate:remote
-npm --prefix api run deploy
-```
-
-Authenticate Wrangler to the configured Cloudflare account before these commands. Secrets live in Cloudflare, never Pages or Git. The existing database must not be recreated. Disable the weekly report cron when the campaign ends. Do not rotate the outbox encryption key while encrypted messages are pending.
-
-## Source provenance
-
-- ZEMA Landing starting structure: `ea02ebc8594569cdeee35a3c959c8196479ea911`.
-- Dust Wave Platform: v0.44.0, `ad2be4580fc05978e7d8d05c93c3038c13e09876`; package pins in `platform.json`.
-- Shared modules: site navigation, layout mixins, asset minification, browser rendering checks, admin API client, request validation, cryptography, email preparation and outbox/provider helpers.
-- Visual reference: https://www.instagram.com/nobhillchiledrop/
-- Information structure reference: https://onetimessquare.com/nye-ball
-
-The free-entry implementation supersedes the earlier paid-entry proposal. Ticket scanning, automatic waitlist promotion and hotel wristbands are outside this release.
+> Work in the Nob Hill Chile Drop repository. Read AGENTS.md, docs/PROJECT.md and the task-relevant guides linked in README.md. Inspect the current checkout and relevant source before editing; recheck live state if the task concerns deployment or drawing operations. Preserve the free-entry, whole-group drawing rules and keep the implementation DRY and KISS. Implement the requested change, run the relevant checks, update affected documentation, and report exactly what was tested and deployed. Task: [describe the change].
