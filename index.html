@@ -48,7 +48,7 @@ form_script: /assets/js/entry.js
   <div class="visit__heading"><h2 id="visit-title">{{ e.visit.title }}</h2><div class="venue"><span class="venue__pin" aria-hidden="true">↗</span><div><h3>{{ e.venue }}</h3><p>{{ e.visit.address }}</p><a class="text-link" href="{{ e.maps_url }}" rel="external">Get directions <span aria-hidden="true">↗</span></a></div></div><a class="calendar-link" href="{{ '/event.ics' | relative_url }}" download>Add the midnight drop to your calendar <span aria-hidden="true">+</span></a></div>
   <figure class="venue-map">
     <div class="venue-map__label"><span class="status-dot" aria-hidden="true"></span>{{ e.venue }} <span>Nob Hill · Route 66</span></div>
-    <iframe src="{{ e.visit.map_embed_url | escape }}" title="Map of Hotel Zazz in Nob Hill, Albuquerque" width="600" height="360" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    <iframe src="{{ e.visit.map_embed_url | escape }}" title="Map of Hotel Zazz in Nob Hill, Albuquerque" width="400" height="280" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
     <figcaption><a href="{{ e.visit.map_url | escape }}" target="_blank" rel="noopener noreferrer">View larger map ↗</a><a href="https://www.openstreetmap.org/copyright" rel="external">© OpenStreetMap contributors</a></figcaption>
   </figure>
   <div class="visit__viewing" id="watch"><h3>{{ e.viewing.title }}</h3><p>{{ e.viewing.description }}</p><p class="visit__note">{{ e.visit.note }}</p></div>

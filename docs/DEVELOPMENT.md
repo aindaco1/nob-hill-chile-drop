@@ -40,6 +40,16 @@ Open [localhost](http://127.0.0.1:4173/nob-hill-chile-drop/). The root `/` is in
 
 The default preview points at the production API. Browser API calls from localhost, including the config fetch, are blocked by production CORS, so entry remains unavailable. The public read-only routes can still be inspected with curl. This is expected. Do not add localhost to the production allowlist to make a test pass.
 
+### Photographic chile decoration
+
+[`assets/art/chile-photo-cutout.webp`](../assets/art/chile-photo-cutout.webp) is a transparent, static decoration for the Hot Spot section. It was derived with the built-in imagegen tool from the organizer-supplied nighttime event photo `671202047_18131021524515970_346734437032965875_n.jpg` on November 4, 2026. It is an imagegen extraction, not an untouched pixel crop. The generated PNG was exported to a 640 × 427 WebP (23,358 bytes), retaining alpha. The full source photo is not published. CSS repeats it at low opacity; it does not replace the original hero SVG or cursor.
+
+Edit prompt:
+
+> Use case: background-extraction. Edit target: the supplied square nighttime photo. Extract ONLY the small illuminated red chile with its mint-green stem from the upper-left portion of the photo. Preserve that exact chile's silhouette, proportions, diagonal orientation (point toward lower left, stem toward upper right), red glow, and photographed light texture. Remove all black sky, wires/supports, streetlamp, buildings, and all lettering. Do not redesign it into a different pepper or illustration. Output a single isolated chile centered on a genuinely transparent canvas, with modest transparent padding and no added text, objects, shadows, or backdrop. This is a small repeating decorative website background asset.
+
+Keep the decorative layer out of the accessibility tree and pointer interaction, preserve the opaque form background, and inspect text contrast and forced-colors behavior after changing its opacity or scale.
+
 ## Safe service testing
 
 Use the API fixture for complete entry, authentication, drawing and mail flows:
