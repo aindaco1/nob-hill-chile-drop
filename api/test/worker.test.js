@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { fixture } from './helpers.js';
 import { dispatchOutbox, prepareMail, mailStatement, queueWeeklyReport, decodePayload } from '../src/mail.js';
 
-const entry = { name: 'A Guest', email: 'guest@example.test', groupSize: 4, consent: true, mediaConsent: true, mediaConsentVersion: 'hot-spot-media-2026-11-04' };
+const entry = { name: 'A Guest', email: 'guest@example.test', groupSize: 4, city: 'Albuquerque', stateProvince: 'NM', country: 'USA', entryFormVersion: 'group-location-2026-11-04', consent: true, mediaConsent: true, mediaConsentVersion: 'hot-spot-media-2026-11-04' };
 
 test('recording consent is required, versioned and saved only on an accepted entry or owner edit', async t => {
   const f = fixture(); t.after(f.close);
@@ -22,10 +22,10 @@ test('recording consent is required, versioned and saved only on an accepted ent
   const verified = await f.request('/api/entries/verify', { method: 'POST', body: { token: await f.link('entry_link') } });
   const token = verified.body.accessToken;
   for (const mediaConsent of [undefined, false, 'true']) {
-    assert.equal((await f.request('/api/entries', { method: 'PATCH', token, body: { ...entry, groupSize: 9, mediaConsent } })).status, 400);
+    assert.equal((await f.request('/api/entries', { method: 'PATCH', token, body: { ...entry, groupSize: 8, mediaConsent } })).status, 400);
   }
   assert.equal(f.DB.prepare('SELECT group_size FROM entries').first().group_size, 4);
-  assert.equal((await f.request('/api/entries', { method: 'PATCH', token, body: { ...entry, groupSize: 9 } })).status, 200);
+  assert.equal((await f.request('/api/entries', { method: 'PATCH', token, body: { ...entry, groupSize: 8 } })).status, 200);
   assert.equal(f.DB.prepare('SELECT media_consent_at FROM entries').first().media_consent_at, f.now());
   // A public submission cannot retroactively record consent for a legacy entrant.
   f.DB.prepare('UPDATE entries SET media_consent_version=NULL,media_consent_at=NULL').run();
@@ -69,6 +69,8 @@ test('config defaults to free/open and reveals no private entries or credentials
   assert.equal(result.body.registrationOpen, true);
   assert.equal(result.body.priceCents, 0);
   assert.equal(result.body.capacity, 2000);
+  assert.equal(result.body.maxGroupSize, 8);
+  assert.equal(result.body.entryFormVersion, entry.entryFormVersion);
   assert.equal(JSON.stringify(result.body).includes('@'), false);
   delete f.env.RESEND_API_KEY;
   assert.equal((await f.request('/api/config')).body.registrationOpen, false);
@@ -93,11 +95,12 @@ test('email ownership, normalized deduplication, safe group edit and one-time ve
   const f = fixture(); t.after(f.close);
   const initial = await f.request('/api/entries', { method: 'POST', body: { ...entry, email: ' GUEST@EXAMPLE.TEST ' } });
   const originalLink = await f.link('entry_link');
-  const duplicate = await f.request('/api/entries', { method: 'POST', body: { ...entry, name: 'Attacker', groupSize: 2000 } });
+  const duplicate = await f.request('/api/entries', { method: 'POST', body: { ...entry, name: 'Attacker', groupSize: 8, city: 'Wrong city', stateProvince: 'Wrong state', country: 'Wrong country' } });
   assert.deepEqual(initial.body, duplicate.body);
   assert.equal(f.DB.prepare('SELECT count(*) AS count FROM entries').first().count, 1);
   assert.equal(f.DB.prepare('SELECT name,group_size FROM entries').first().name, entry.name);
   assert.equal(f.DB.prepare('SELECT name,group_size FROM entries').first().group_size, entry.groupSize);
+  assert.deepEqual({ ...f.DB.prepare('SELECT city,state_province,country FROM entries').first() }, { city: entry.city, state_province: entry.stateProvince, country: entry.country });
   assert.ok(f.DB.prepare('SELECT payload FROM outbox').first().payload.includes('.'));
   assert.equal(f.DB.prepare('SELECT payload FROM outbox').first().payload.includes(originalLink), false);
   assert.equal(f.DB.prepare('SELECT hash FROM tokens').first().hash.length, 64);
@@ -190,11 +193,14 @@ test('manual draw requires closure; preparation and commit are atomic and cannot
 test('CSV requires admin and neutralizes spreadsheet formulas', async t => {
   const f = fixture(); t.after(f.close);
   f.seedEntry(1, true, '=HYPERLINK("https://evil.test")');
+  f.DB.prepare('UPDATE entries SET city=?,state_province=?,country=?').bind('=1+1','Québec, QC','Canada').run();
   assert.equal((await f.request('/api/admin/entries.csv')).status, 401);
   const token = await f.admin();
   const result = await f.request('/api/admin/entries.csv', { token });
   assert.equal(result.status, 200);
   assert.ok(result.body.includes("'="));
+  assert.ok(result.body.includes('city,state_province,country'));
+  assert.ok(result.body.includes("\"'=1+1\",\"Québec, QC\",\"Canada\""));
   assert.equal(result.headers.get('cache-control'), 'private, no-store');
 });
 
@@ -260,6 +266,7 @@ test('erasure after preparation anonymizes without invalidating or changing the 
   const f = fixture(); t.after(f.close);
   const token = await f.admin();
   const id = f.seedEntry(5);
+  f.DB.prepare('UPDATE entries SET city=?,state_province=?,country=? WHERE id=?').bind('Albuquerque','NM','USA',id).run();
   await f.request('/api/admin/settings', { method: 'PATCH', token, body: { registrationOpen: false } });
   const preview = await f.request('/api/admin/draw/preview', { method: 'POST', token, body: {} });
   assert.equal((await f.request(`/api/admin/entries/${id}`, { method: 'DELETE', token })).body.action, 'anonymized');
@@ -267,6 +274,9 @@ test('erasure after preparation anonymizes without invalidating or changing the 
   assert.equal(row.name, 'Deleted entrant');
   assert.equal(row.email, `${id}@deleted.invalid`);
   assert.equal(row.group_size, 5);
+  assert.equal(row.city, null);
+  assert.equal(row.state_province, null);
+  assert.equal(row.country, null);
   assert.equal((await f.request('/api/admin/draw/commit', { method: 'POST', token, body: { previewId: preview.body.previewId } })).status, 200);
   assert.equal((await f.request('/api/admin/draw/publish', { method: 'POST', token, body: {} })).body.queuedWinnerEmails, 0);
   assert.equal(f.DB.prepare('SELECT COUNT(*) AS count FROM results').first().count, 1);
@@ -394,4 +404,52 @@ test('Worker-compatible manual redirects never follow a provider redirect or for
   assert.equal(stored.status, 'failed');
   assert.equal(stored.last_error, 'provider_307');
   assert.equal(stored.provider_id, null);
+});
+
+
+test('required location is trimmed, persisted, owner-editable and available only to authorized readers', async t => {
+  const f = fixture(); t.after(f.close);
+  await f.request('/api/entries', { method: 'POST', body: { ...entry, city: ' Albuquerque ', stateProvince: ' NM ', country: ' USA ' } });
+  const before = f.DB.prepare('SELECT * FROM entries').first();
+  assert.equal(before.city, 'Albuquerque'); assert.equal(before.state_province, 'NM'); assert.equal(before.country, 'USA');
+  const verified = await f.request('/api/entries/verify', { method: 'POST', body: { token: await f.link('entry_link') } });
+  const token = verified.body.accessToken;
+  assert.equal(verified.body.entry.city, 'Albuquerque');
+  assert.equal(verified.body.entry.requiredEntryFormVersion, entry.entryFormVersion);
+  assert.equal(verified.body.entry.maxGroupSize, 8);
+  for (const field of ['city', 'stateProvince', 'country']) {
+    for (const value of [undefined, null, 123, '', '   ', 'a'.repeat(121), 'line\nbreak']) {
+      for (const method of ['POST', 'PATCH']) {
+        const response = await f.request('/api/entries', { method, token, body: { ...entry, [field]: value } });
+        assert.equal(response.status, 400, `${method} rejects ${field}: ${JSON.stringify(value)}`);
+      }
+    }
+  }
+  assert.equal(f.DB.prepare('SELECT city FROM entries').first().city, 'Albuquerque');
+  const update = await f.request('/api/entries', { method: 'PATCH', token, body: { ...entry, city: ' Montréal ', stateProvince: ' Québec ', country: ' Canada ' } });
+  assert.equal(update.status, 200);
+  for (const response of [update, await f.request('/api/entries/status', { token })]) {
+    assert.equal(response.body.entry.city, 'Montréal');
+    assert.equal(response.body.entry.stateProvince, 'Québec');
+    assert.equal(response.body.entry.country, 'Canada');
+  }
+  const admin = await f.admin();
+  const snapshot = await f.request('/api/admin/entries', { token: admin });
+  assert.equal(snapshot.body.entries[0].city, 'Montréal');
+  assert.equal(snapshot.body.entries[0].stateProvince, 'Québec');
+  assert.equal(snapshot.body.entries[0].country, 'Canada');
+  assert.equal(JSON.stringify((await f.request('/api/config')).body).includes('Montréal'), false);
+});
+
+test('both entry routes require the current form and enforce groups of one through eight', async t => {
+  const f = fixture(); t.after(f.close);
+  assert.equal((await f.request('/api/entries', { method: 'POST', body: { ...entry, groupSize: 8 } })).status, 202);
+  const verified = await f.request('/api/entries/verify', { method: 'POST', body: { token: await f.link('entry_link') } });
+  const token = verified.body.accessToken;
+  for (const patch of [{ groupSize: 0 }, { groupSize: 9 }, { groupSize: 2000 }, { groupSize: 1.5 }, { groupSize: '8' }, { entryFormVersion: undefined }, { entryFormVersion: 'old' }]) {
+    for (const method of ['POST', 'PATCH']) assert.equal((await f.request('/api/entries', { method, token, body: { ...entry, ...patch } })).status, 400);
+  }
+  assert.equal(f.DB.prepare('SELECT group_size FROM entries').first().group_size, 8);
+  for (const groupSize of [1, 8]) assert.equal((await f.request('/api/entries', { method: 'PATCH', token, body: { ...entry, groupSize } })).body.entry.groupSize, groupSize);
+  assert.equal(f.DB.prepare('SELECT capacity FROM settings').first().capacity, 2000);
 });

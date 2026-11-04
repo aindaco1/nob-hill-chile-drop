@@ -37,7 +37,10 @@ access:
   alcohol_ends_label: "11:30 p.m."
   hours_note: December 31 · All times Mountain Time
   notice: Entry is free and doesn't guarantee admission. We'll announce the drawing date here.
-  group_note: Enter once for everyone coming with you. If your group is selected, you all get in together.
+  group_note: Enter once for up to 8 people, including yourself. If your group is selected, you all get in together.
+entry_form:
+  version: group-location-2026-11-04
+  max_group_size: 8
 media_consent:
   version: hot-spot-media-2026-11-04
   text: By entering the Hot Spot, I consent to being photographed, filmed or otherwise recorded, and to use of my appearance, voice and name in any media, throughout the universe, in perpetuity, for any purpose connected with advertising, marketing or promoting the Nob Hill Chile Drop.

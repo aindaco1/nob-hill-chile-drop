@@ -1,8 +1,9 @@
 <p class="form-status" data-registration-status role="status">Checking entry availability…</p>
-<form class="form-stack" data-entry-form hidden>
+<form class="form-stack" data-entry-form data-form-version="{{ site.data.event.entry_form.version | escape }}" hidden>
   <label class="field" for="entry-name">Your name<input id="entry-name" name="name" autocomplete="name" maxlength="120" required></label>
   <div class="field"><label for="entry-email">Email address</label><input id="entry-email" name="email" type="email" autocomplete="email" maxlength="254" aria-describedby="entry-email-help" required><small id="entry-email-help">We'll send a link to confirm your entry and check your results.</small></div>
-  <div class="field"><label for="entry-size">People in your group</label><input id="entry-size" name="groupSize" type="number" min="1" max="2000" step="1" value="1" inputmode="numeric" aria-describedby="entry-size-help" required><small id="entry-size-help">Include yourself and every guest who will attend with you.</small></div>
+  <div class="field"><label for="entry-size">People in your group</label><select id="entry-size" name="groupSize" data-max-group-size="{{ site.data.event.entry_form.max_group_size }}" aria-describedby="entry-size-help" required>{% for size in (1..site.data.event.entry_form.max_group_size) %}<option value="{{ size }}">{{ size }}</option>{% endfor %}</select><small id="entry-size-help">1–{{ site.data.event.entry_form.max_group_size }} people, including yourself and every guest who will attend with you.</small></div>
+  {% include entry-location.html prefix="entry" %}
   <div class="form-trap" aria-hidden="true"><label>Leave this blank<input name="website" tabindex="-1" autocomplete="off"></label></div>
   <label class="consent"><input type="checkbox" name="consent" required><span>I understand that entry doesn't guarantee admission. My group stays together, and I agree to the <a href="{{ '/drawing-rules/' | relative_url }}">drawing rules</a>, <a href="{{ '/hot-spot-rules/' | relative_url }}">Hot Spot rules</a> and <a href="{{ '/privacy/' | relative_url }}">privacy notice</a>.</span></label>
   {% include media-consent.html %}

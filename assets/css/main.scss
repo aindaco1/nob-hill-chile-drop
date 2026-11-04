@@ -40,14 +40,15 @@ $space-md: 24px;
 .consent>span,.hero__details>span{min-width:0;overflow-wrap:anywhere}
 h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
 .hot-spot__inner>*,.visit>*,.faq>*,.film__inner>*,.venue>*,.site-footer>*{min-width:0}
-.field input{min-width:0}
+.field{min-width:0;overflow-wrap:anywhere}
+.field input,.field select{min-width:0}
 @media(max-width:760px){
   .header-cta{display:none}
   .menu-toggle{margin-left:auto}
   .hot-spot__inner,.visit{grid-template-columns:minmax(0,1fr)}
   .site-footer{grid-template-columns:minmax(0,1fr);justify-items:start}
 }
-@media(forced-colors:active){.button,.field input{border:1px solid ButtonText}.status-dot{border:1px solid currentColor}}
+@media(forced-colors:active){.button,.field input,.field select{border:1px solid ButtonText}.status-dot{border:1px solid currentColor}}
 
 .visit__viewing{align-self:start;max-width:none}.visit__viewing h3{font-size:1.5rem;line-height:1.3;margin-bottom:1rem}.visit__viewing p{font-size:1.125rem;line-height:1.75}.visit__viewing .visit__note{font-size:1rem;color:#53605b;border-top:1px solid #c6cabe;padding-top:1.3rem;margin-top:1.3rem}.faq .text-link{margin-top:1.3rem}.site-footer{border-top:1px solid var(--line)}
 .eyebrow{font-size:.875rem;letter-spacing:.1em}.access-status,.footer-bottom,.field small,.consent,.hot-spot-hours__zone{font-size:.9375rem}

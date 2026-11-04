@@ -73,7 +73,7 @@ The schema supports **one event and one drawing**. SQL timestamps are epoch mill
 | Table | Purpose and invariants |
 | --- | --- |
 | `settings` | Singleton `id=1`; registration flag, capacity 1–2000, revision and `hero_media` (`animation` or `channel26`). Display updates do not advance the drawing revision. |
-| `entries` | UUID, unique normalized email, name, group size, rules consent version, nullable media-consent version/time, creation/update/verification/deletion timestamps. Existing rows keep null media consent until an authenticated owner explicitly agrees during an edit. |
+| `entries` | UUID, unique normalized email, name, group size, nullable city/state-province/country, rules consent version, nullable media-consent version/time, creation/update/verification/deletion timestamps. New entries and owner edits require location and a group size of 1–8. Legacy rows keep null location until supplied by the owner, and null media consent until the owner explicitly agrees during an edit. |
 | `tokens` | SHA-256 hashes of link/session tokens, type, subject, expiration and single-use consumption state |
 | `rate_limits` | Hashed identity/time buckets and counts; no raw IP/email key |
 | `draw_preview` | Singleton immutable UUID, capacity, captured revision and ranked results JSON |

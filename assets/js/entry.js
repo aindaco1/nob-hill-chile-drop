@@ -11,11 +11,11 @@ refreshing = true;
 try {
   const config = await request('/api/config');
   renderHeroMedia(config.heroMedia);
-  const compatible = config.mediaConsentVersion === form.elements.mediaConsent.value;
+  const compatible = config.mediaConsentVersion === form.elements.mediaConsent.value && config.entryFormVersion === form.dataset.formVersion && config.maxGroupSize === Number(form.elements.groupSize.dataset.maxGroupSize);
   const open = config.registrationOpen && compatible;
   form.hidden = !open;
   const closedMessage = !compatible
-    ? 'Entry is temporarily unavailable while the recording consent is updated. Please refresh in a moment.'
+    ? 'Entry is temporarily unavailable while the entry form is updated. Please refresh in a moment.'
     : config.resultsPublished && config.results
     ? `The drawing is complete: ${config.results.selectedOrders} groups, with ${config.results.selectedPeople} guests, were selected. Use your private entry link to see your result.`
     : 'Entries are closed. Check back for drawing news.';
@@ -33,7 +33,7 @@ form.addEventListener('submit', event => {
     const fields = new FormData(form);
     if (fields.get('website')) return;
     try {
-      await request('/api/entries', { method: 'POST', body: { name: fields.get('name'), email: fields.get('email'), groupSize: Number(fields.get('groupSize')), consent: fields.get('consent') === 'on', mediaConsent: form.elements.mediaConsent.checked, mediaConsentVersion: fields.get('mediaConsent') } });
+      await request('/api/entries', { method: 'POST', body: { name: fields.get('name'), email: fields.get('email'), city: fields.get('city'), stateProvince: fields.get('stateProvince'), country: fields.get('country'), entryFormVersion: form.dataset.formVersion, groupSize: Number(fields.get('groupSize')), consent: fields.get('consent') === 'on', mediaConsent: form.elements.mediaConsent.checked, mediaConsentVersion: fields.get('mediaConsent') } });
       status(feedback, 'Check your inbox for a private link to confirm or manage your group entry. Your email must be confirmed before the drawing.', 'success');
       form.reset();
       feedback.focus();

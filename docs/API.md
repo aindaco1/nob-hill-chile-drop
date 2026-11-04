@@ -19,13 +19,15 @@ Implementation: [`api/src/worker.js`](../api/src/worker.js). Production base: `h
 | --- | --- | --- | --- |
 | `GET /health` | None | — | 200 `{ok, emailConfigured}`; reads settings and checks mail configuration shape |
 | `GET /api/config` | None | — | 200 public settings and event metadata, below |
-| `POST /api/entries` | Origin | `{name, email, groupSize, consent: true, mediaConsent: true, mediaConsentVersion}` | 202 generic acknowledgment; queues a verification/access link |
+| `POST /api/entries` | Origin | `{name, email, city, stateProvince, country, entryFormVersion, groupSize, consent: true, mediaConsent: true, mediaConsentVersion}` | 202 generic acknowledgment; queues a verification/access link |
 | `POST /api/entries/link` | Origin | `{email}` | 202 same generic acknowledgment whether an entry exists or not |
 | `POST /api/entries/verify` | Origin | `{token}` | 200 `{accessToken, expiresAt, entry}` |
 | `GET /api/entries/status` | Entry Bearer + Origin | — | 200 `{entry}` |
-| `PATCH /api/entries` | Entry Bearer + Origin | `{name, groupSize, consent: true, mediaConsent: true, mediaConsentVersion}` | 200 `{entry}`; only while verified, open and unlocked |
+| `PATCH /api/entries` | Entry Bearer + Origin | `{name, city, stateProvince, country, entryFormVersion, groupSize, consent: true, mediaConsent: true, mediaConsentVersion}` | 200 `{entry}`; only while verified, open and unlocked |
 
-`name` is trimmed, 1–120 characters with control characters rejected. `email` is normalized and validated, at most 254 characters. `groupSize` must be a JSON integer, 1–2000 (not a numeric string); `consent` and `mediaConsent` must be literal `true`. `mediaConsentVersion` must match `hot-spot-media-2026-11-04`; missing, false or stale recording agreement fails with 400 before an entry or mail job is created. New entries and owner edits store the version and acceptance time. Duplicate public registration never updates these fields on an existing entry. Email cannot be changed with PATCH.
+`name` is trimmed, 1–120 characters with control characters rejected. `email` is normalized and validated, at most 254 characters. `groupSize` must be a JSON integer, 1–8 (not a numeric string); `consent` and `mediaConsent` must be literal `true`. `mediaConsentVersion` must match `hot-spot-media-2026-11-04`; missing, false or stale recording agreement fails with 400 before an entry or mail job is created. New entries and owner edits store the version and acceptance time. Duplicate public registration never updates these fields on an existing entry. Email cannot be changed with PATCH.
+
+`city`, `stateProvince` and `country` are required strings, trimmed to 1–120 characters, with control characters rejected. Country defaults to USA only in the browser; the API does not invent missing location values. `entryFormVersion` must match `group-location-2026-11-04`; missing/stale versions receive a 400 refresh instruction. Owner status/verification/edit responses expose the three location fields, `requiredEntryFormVersion` and `maxGroupSize: 8`. Admin entries and CSV include location; public config does not. Legacy location columns remain null until an authenticated owner supplies them. Migration does not change existing eligibility or ranks, and privacy erasure clears all three columns.
 
 The generic acknowledgment intentionally avoids account enumeration:
 
@@ -36,7 +38,7 @@ The generic acknowledgment intentionally avoids account enumeration:
 }
 ```
 
-A 202 does not prove eligibility, provider acceptance or inbox delivery. Duplicate registration does not overwrite an existing group's name/size. First verification is blocked after closing/preparation; previously verified owners can still exchange a fresh link for status access.
+A 202 does not prove eligibility, provider acceptance or inbox delivery. Duplicate registration does not overwrite an existing group's name/size/location. First verification is blocked after closing/preparation; previously verified owners can still exchange a fresh link for status access.
 
 Public config contains:
 
@@ -44,7 +46,8 @@ Public config contains:
 | --- | --- |
 | `registrationOpen` | Stored registration flag **and** mail readiness; can be false even if the stored flag is open |
 | `capacity`, `locked`, `revision` | Current capacity, whether an immutable preview exists, and settings/entry revision |
-| `freeEntry`, `priceCents`, `maxGroupSize` | `true`, `0`, `2000` |
+| `freeEntry`, `priceCents`, `maxGroupSize` | `true`, `0`, `8` |
+| `entryFormVersion` | Required field contract: `group-location-2026-11-04` |
 | `consentVersion` | Current rules consent revision: `free-drawing-2026-11-04` |
 | `mediaConsentVersion` | Required recording-consent revision: `hot-spot-media-2026-11-04` |
 | `heroMedia` | `animation` (default) or `channel26`; a display choice, independent of drawing state |

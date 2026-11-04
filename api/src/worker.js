@@ -7,6 +7,8 @@ const MINUTE = 60_000;
 const DAY = 86_400_000;
 const CONSENT_VERSION = 'free-drawing-2026-11-04';
 const MEDIA_CONSENT_VERSION = 'hot-spot-media-2026-11-04';
+const ENTRY_FORM_VERSION = 'group-location-2026-11-04';
+const MAX_GROUP_SIZE = 8;
 const GENERIC = { ok: true, message: 'If this address can receive a link, check your email. Links may take a few minutes.' };
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
@@ -24,14 +26,19 @@ function normalizedEmail(value) {
   if (email.length > 254 || !/^[^\s@<>\x00-\x1f]+@[^\s@<>\x00-\x1f]+\.[^\s@<>\x00-\x1f]+$/.test(email)) fail('Enter a valid email address.');
   return email;
 }
+function locationField(value, label) {
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > 120 || /[\x00-\x1f\x7f]/.test(value)) fail(`Enter ${label} using 1–120 characters.`);
+  return value.trim();
+}
 function entryFields(body) {
+  if (body.entryFormVersion !== ENTRY_FORM_VERSION) fail('The entry form has changed. Refresh the page and try again.');
   if (typeof body.name !== 'string') fail('Enter your name.');
   const name = body.name.trim();
   if (!name || name.length > 120 || /[\x00-\x1f\x7f]/.test(name)) fail('Enter a name of up to 120 characters.');
-  if (!Number.isInteger(body.groupSize) || body.groupSize < 1 || body.groupSize > 2000) fail('Group size must be a whole number from 1 to 2,000.');
+  if (!Number.isInteger(body.groupSize) || body.groupSize < 1 || body.groupSize > MAX_GROUP_SIZE) fail('Group size must be a whole number from 1 to 8.');
   if (body.consent !== true) fail('Confirm the drawing rules and entry consent.');
   if (body.mediaConsent !== true || body.mediaConsentVersion !== MEDIA_CONSENT_VERSION) fail('Agree to the current Hot Spot recording consent. Refresh the page if needed.');
-  return { name, groupSize: body.groupSize };
+  return { name, groupSize: body.groupSize, city: locationField(body.city, 'your city'), stateProvince: locationField(body.stateProvince, 'your state/province'), country: locationField(body.country, 'your country') };
 }
 function allowedOrigin(request, env) {
   const origin = request.headers.get('origin');
@@ -105,10 +112,10 @@ async function register(request, env, now) {
   if (!(await settings(env)).registration_open) fail('Drawing entries are closed.', 409, 'registration_closed');
   await rateLimit(env, `entry-email:${email}`, 3, 60 * MINUTE, now);
   // A public re-submission never changes a group's details. Only its verified owner can edit.
-  await env.DB.prepare(`INSERT OR IGNORE INTO entries (id,email,name,group_size,consent_version,created_at,updated_at,media_consent_version,media_consent_at)
-    SELECT ?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM settings WHERE id=1 AND registration_open=1)
+  await env.DB.prepare(`INSERT OR IGNORE INTO entries (id,email,name,group_size,consent_version,created_at,updated_at,media_consent_version,media_consent_at,city,state_province,country)
+    SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM settings WHERE id=1 AND registration_open=1)
     AND NOT EXISTS(SELECT 1 FROM draw_preview)`)
-    .bind(crypto.randomUUID(), email, fields.name, fields.groupSize, CONSENT_VERSION, now, now, MEDIA_CONSENT_VERSION, now).run();
+    .bind(crypto.randomUUID(), email, fields.name, fields.groupSize, CONSENT_VERSION, now, now, MEDIA_CONSENT_VERSION, now, fields.city, fields.stateProvince, fields.country).run();
   const entry = await env.DB.prepare('SELECT id,email FROM entries WHERE email=?').bind(email).first();
   if (entry) await sendEntryLink(env, entry, now);
   return GENERIC;
@@ -168,15 +175,16 @@ async function entryStatus(env, id) {
   if (!entry) fail('Entry not found.', 404);
   const config = await settings(env);
   return { id: entry.id, name: entry.name, email: entry.email, groupSize: entry.group_size,
-    requiredMediaConsentVersion: MEDIA_CONSENT_VERSION,
+    city: entry.city, stateProvince: entry.state_province, country: entry.country,
+    requiredEntryFormVersion: ENTRY_FORM_VERSION, maxGroupSize: MAX_GROUP_SIZE, requiredMediaConsentVersion: MEDIA_CONSENT_VERSION,
     verified: Boolean(entry.verified_at), status: entry.result || (entry.verified_at ? 'entered' : 'pending_verification'),
     canEdit: Boolean(config.registration_open && !config.locked), createdAt: new Date(entry.created_at).toISOString() };
 }
 async function updateEntry(request, env, id, now) {
   const fields = entryFields(await bodyOf(request));
-  const result = await env.DB.prepare(`UPDATE entries SET name=?,group_size=?,updated_at=?,consent_version=?,media_consent_version=?,media_consent_at=? WHERE id=?
+  const result = await env.DB.prepare(`UPDATE entries SET name=?,group_size=?,updated_at=?,consent_version=?,media_consent_version=?,media_consent_at=?,city=?,state_province=?,country=? WHERE id=?
     AND verified_at IS NOT NULL AND EXISTS(SELECT 1 FROM settings WHERE registration_open=1)
-    AND NOT EXISTS(SELECT 1 FROM draw_preview)`).bind(fields.name, fields.groupSize, now, CONSENT_VERSION, MEDIA_CONSENT_VERSION, now, id).run();
+    AND NOT EXISTS(SELECT 1 FROM draw_preview)`).bind(fields.name, fields.groupSize, now, CONSENT_VERSION, MEDIA_CONSENT_VERSION, now, fields.city, fields.stateProvince, fields.country, id).run();
   if (!result.meta.changes) fail('Changes are closed for this drawing.', 409, 'registration_closed');
   return { entry: await entryStatus(env, id) };
 }
@@ -193,6 +201,7 @@ async function adminEntries(env, url) {
   const drawing = await env.DB.prepare('SELECT * FROM drawing WHERE id=1').first();
   const outbox = await env.DB.prepare('SELECT status,COUNT(*) AS count FROM outbox GROUP BY status').all();
   return { entries: entries.results.map(entry => ({ id: entry.id, name: entry.name, email: entry.email, groupSize: entry.group_size,
+    city: entry.city, stateProvince: entry.state_province, country: entry.country,
     verified: Boolean(entry.verified_at), createdAt: new Date(entry.created_at).toISOString(), status: entry.result || (entry.verified_at ? 'entered' : 'pending_verification'), rank: entry.rank })),
     total: counts.totalOrders, counts, settings: settingsView(await settings(env), env),
     preview: preview ? { previewId: preview.preview_id, ...drawingSummary(JSON.parse(preview.results_json), preview.capacity) } : null,
@@ -295,7 +304,7 @@ async function eraseEntry(env, id, actor, now) {
     env.DB.prepare(`UPDATE outbox SET status=CASE WHEN status='sent' THEN status ELSE 'suppressed' END,
       payload='',lease_until=NULL,lease_token=NULL WHERE recipient_id=?`).bind(id),
     env.DB.prepare('DELETE FROM entries WHERE id=? AND NOT EXISTS(SELECT 1 FROM draw_preview)').bind(id),
-    env.DB.prepare(`UPDATE entries SET name='Deleted entrant',email=?,deleted_at=? WHERE id=? AND deleted_at IS NULL
+    env.DB.prepare(`UPDATE entries SET name='Deleted entrant',email=?,deleted_at=?,city=NULL,state_province=NULL,country=NULL WHERE id=? AND deleted_at IS NULL
       AND EXISTS(SELECT 1 FROM draw_preview)`).bind(`${id}@deleted.invalid`, now, id),
     audit(env, 'privacy_erasure', actor, now, { entryId: id })
   ]);
@@ -306,9 +315,9 @@ function csvCell(value) {
   return `"${(/^[\s]*[=+@\-\t\r]/.test(text) ? `'${text}` : text).replace(/"/g, '""')}"`;
 }
 async function exportEntries(env) {
-  const rows = await env.DB.prepare(`SELECT e.id,e.name,e.email,e.group_size,e.created_at,e.verified_at,r.status,r.rank
+  const rows = await env.DB.prepare(`SELECT e.id,e.name,e.email,e.group_size,e.city,e.state_province,e.country,e.created_at,e.verified_at,r.status,r.rank
     FROM entries e LEFT JOIN results r ON r.entry_id=e.id ORDER BY e.created_at,e.id`).all();
-  const fields = ['id', 'name', 'email', 'group_size', 'created_at', 'verified_at', 'status', 'rank'];
+  const fields = ['id', 'name', 'email', 'group_size', 'city', 'state_province', 'country', 'created_at', 'verified_at', 'status', 'rank'];
   return [fields.join(','), ...rows.results.map(row => fields.map(key => csvCell(row[key])).join(','))].join('\r\n');
 }
 
@@ -332,7 +341,7 @@ export function createWorker(dependencies = {}) {
           const row = await settings(env);
           const drawing = await env.DB.prepare('SELECT published_at FROM drawing WHERE id=1').first();
           const totals = drawing?.published_at ? await env.DB.prepare("SELECT COUNT(*) AS selectedOrders,COALESCE(SUM(e.group_size),0) AS selectedPeople FROM results r JOIN entries e ON e.id=r.entry_id WHERE r.status='selected'").first() : null;
-          return reply(request, env, { ...settingsView(row, env), freeEntry: true, priceCents: 0, maxGroupSize: 2000,
+          return reply(request, env, { ...settingsView(row, env), freeEntry: true, priceCents: 0, maxGroupSize: MAX_GROUP_SIZE, entryFormVersion: ENTRY_FORM_VERSION,
             consentVersion: CONSENT_VERSION, mediaConsentVersion: MEDIA_CONSENT_VERSION, resultsPublished: Boolean(drawing?.published_at), results: totals,
             eventDate: '2026-12-31', dropTime: '2027-01-01T00:00:00-07:00', timezone: 'America/Denver' });
         }

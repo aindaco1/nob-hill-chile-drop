@@ -6,9 +6,9 @@ This guide describes the implemented behavior. The public-facing version is [dra
 
 ## Guest lifecycle
 
-1. Submit a name, email, group size including the entrant, agreement to the drawing/Hot Spot rules and privacy notice, and separate recording consent. The size must be an integer from 1 through 2,000. The Worker requires the current recording-consent version and records its version and timestamp; both agreements are required again for owner edits.
+1. Submit a name, email, city, state/province, country, group size including the entrant, agreement to the drawing/Hot Spot rules and privacy notice, and separate recording consent. The size must be an integer from 1 through 8; both forms offer only those eight choices. City, State/Province and Country are required free-text fields; Country defaults to USA in the browser. The current entry-form version is required on new entries and owner edits. The Worker requires the current recording-consent version and records its version and timestamp; both agreements are required again for owner edits.
 2. Confirm the email through the single-use link. Only verified entries participate. Email is trimmed/lowercased and unique; submitting an existing email sends access to its owner without overwriting their group.
-3. Use the private entry page to change name/size while registration is open. Changing the email address is not supported by this form/API.
+3. Use the private entry page to change name, location and group size while registration is open. Changing the email address is not supported by this form/API.
 4. After registration closes, no new entries, first-time verifications or group edits are accepted. Already-verified owners can still request a link to see their status.
 5. After publication, selected groups receive an email. Every verified entrant can view their own selected/waitlisted status privately. Unselected groups do not receive a separate results email in the current implementation.
 
@@ -73,11 +73,11 @@ Public results contain only selected group/guest counts. Private entry status hi
 Verify the requester's authority to remove an entry before using the admin-only deletion API. The organizer UI currently has no deletion control; [API](API.md) documents `DELETE /api/admin/entries/:id` for an authorized support action.
 
 - Before preparation, erasure deletes the entry, removes its tokens and suppresses its queued mail.
-- After preparation, erasure replaces personal details with an anonymous placeholder while preserving group size and the fixed rank/result. Tokens are removed and pending mail is suppressed. Capacity is not automatically reallocated.
+- After preparation, erasure clears location fields and replaces name/email with anonymous placeholders while preserving group size and the fixed rank/result. Tokens are removed and pending mail is suppressed. Capacity is not automatically reallocated.
 - Sent jobs retain their sent state but lose payload; other recipient-linked jobs are suppressed and cleared. An already accepted or in-flight provider request cannot be recalled by database erasure.
 - CSV exports, provider-held records, backups and inbox copies require separate handling. Do not claim a database operation deleted all external copies.
 
-CSV export includes IDs, name/email, group size, creation/verification timestamps, result and rank. Timestamp columns are raw epoch milliseconds; entries are ordered by creation time then ID. Formula-like leading cell content is escaped. Store exports privately; do not commit them, add them to Pages or attach them to public issues.
+CSV export includes IDs, name/email, group size, city/state-province/country, creation/verification timestamps, result and rank. Timestamp columns are raw epoch milliseconds; entries are ordered by creation time then ID. Formula-like leading cell content is escaped. Store exports privately; do not commit them, add them to Pages or attach them to public issues.
 
 ## Weekly activity
 

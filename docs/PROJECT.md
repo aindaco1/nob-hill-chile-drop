@@ -17,6 +17,7 @@ Help visitors understand the event, enter a free group drawing for Hot Spot admi
 | Countdown instant | `2027-01-01T00:00:00-07:00`, equivalent to `2027-01-01T07:00:00Z` |
 | Time zone | `America/Denver`; use explicit Mountain Time in visitor copy |
 | Admission | Free entry into a drawing; selected groups receive free Hot Spot admission |
+| Group size | 1–8 people, including the entrant; required location is city, state/province and country (Country defaults to USA) |
 | Capacity | At most 2,000 people, kept in whole groups |
 | Administration and weekly reports | `alonso@dustwave.xyz` |
 | Closing and drawing | Manual; no announced date |
@@ -38,6 +39,8 @@ The Hot Spot offers close views, music, alcohol sales for eligible adults and a 
 | Jekyll + native JS + small Worker | Preserve the existing structure and keep changes DRY and KISS |
 
 See [Drawing](DRAWING.md) for precise eligibility and capacity behavior. Equal random rank does not imply identical final admission probability for different group sizes.
+
+The entry and owner-edit forms offer only 1–8 in a native group-size dropdown. Required City, State/Province and Country inputs accept free text; Country starts at USA and remains editable. Location is private organizer/entry-owner information, included in the guest CSV and removed by privacy erasure. The 2,000-person event ceiling and selection algorithm are unchanged. See [Operations](OPERATIONS.md#group-size-and-location-release) for the additive location migration and form-contract release.
 
 ## Current content and visual direction
 
@@ -66,7 +69,7 @@ This section describes source changes, not a production release. The dated live 
 - Getting here includes a lazy-loaded OpenStreetMap neighborhood embed, a dark color treatment, an event-colored frame, visible attribution and a larger-map link. The address and marker come from [Hotel Zazz's own website](https://www.hotelzazz.com/) (3711 Central Ave NE; 35.080089, -106.602618), reviewed November 4. This locates the hotel; it does not establish event boundaries, parking or arrival instructions. The privacy notice discloses the map connection.
 - Getting here uses three columns from 1100px (venue details, smaller map, public viewing information), two on tablets and one on phones. The map is 280px high on larger screens and 260px on phones; surrounding labels and attribution can expand with text size.
 - The Hot Spot has a faint, static repeating chile background derived from the organizer-supplied event photo. The 180 × 120px tiles render at 9% opacity, with alternating rows offset by half a tile to avoid straight columns. The form stays opaque and the decoration is absent in forced-colors mode. See [asset provenance](DEVELOPMENT.md#photographic-chile-decoration) for the source and edit prompt.
-- The separate personal-photos/photoshoot restriction was removed at the organizer's request. Recording-consent wording is unchanged but italicized in the rules and shared form checkbox. Event/access questions on the rules page go to `nobhillabqmainstreet@gmail.com`, owned by `_data/event.yml`; this is distinct from the existing private administration, privacy and report contacts.
+- The separate personal-photos/photoshoot restriction was removed at the organizer's request. Recording-consent wording is unchanged but italicized in the rules, with regular type in the shared form checkbox. Event/access questions on the rules page go to `nobhillabqmainstreet@gmail.com`, owned by `_data/event.yml`; this is distinct from the existing private administration, privacy and report contacts.
 - Release requires additive migration `0002_media_consent_and_display.sql`, the Worker and Pages. New forms fail closed against an older consent contract; old forms receive a refresh instruction from the new Worker. See [Operations](OPERATIONS.md#rules-consent-and-stream-release) for sequencing and rollback limits.
 
 ## Remaining decisions and limitations

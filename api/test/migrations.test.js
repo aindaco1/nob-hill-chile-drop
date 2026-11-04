@@ -21,3 +21,23 @@ test('media migration preserves legacy entry consent, settings, revision and fix
   assert.deepEqual(db.prepare('SELECT * FROM draw_preview').get(), preview);
   assert.throws(() => db.prepare('UPDATE settings SET hero_media=?').run('arbitrary-html'));
 });
+
+
+test('location migration leaves legacy details, eligibility and fixed drawing untouched', t => {
+  const db = new DatabaseSync(':memory:'); t.after(() => db.close());
+  const migration = name => readFileSync(new URL(`../migrations/${name}`, import.meta.url), 'utf8');
+  db.exec(migration('0001_drawing.sql'));
+  db.exec(migration('0002_media_consent_and_display.sql'));
+  db.exec(`INSERT INTO entries (id,email,name,group_size,consent_version,created_at,updated_at,verified_at)
+    VALUES ('legacy','legacy@example.test','Legacy guest',10,'old',1,1,1);
+    UPDATE settings SET registration_open=0,hero_media='channel26';
+    INSERT INTO draw_preview (id,preview_id,revision,capacity,created_at,results_json)
+    SELECT 1,'fixed',revision,capacity,2,'[{"entryId":"legacy","groupSize":10,"rank":1,"status":"selected"}]' FROM settings;`);
+  const entry = db.prepare('SELECT * FROM entries').get();
+  const settings = db.prepare('SELECT * FROM settings').get();
+  const preview = db.prepare('SELECT * FROM draw_preview').get();
+  db.exec(migration('0003_entry_location.sql'));
+  assert.deepEqual({ ...db.prepare('SELECT * FROM entries').get() }, { ...entry, city: null, state_province: null, country: null });
+  assert.deepEqual(db.prepare('SELECT * FROM settings').get(), settings);
+  assert.deepEqual(db.prepare('SELECT * FROM draw_preview').get(), preview);
+});

@@ -30,7 +30,7 @@ function render(data) {
   summary.hidden=!data.preview;
   if(data.preview){const p=data.preview;summary.textContent=`${p.selectedOrders} selected groups / ${p.selectedPeople} guests. ${p.waitlistedOrders} groups waitlisted. ${p.unusedCapacity} spaces unfilled. ${data.drawing?(data.drawing.publishedAt?'Results published.':'Result committed; emails have not been published.'):'Random order is fixed. Review before committing.'}`;}
   const body=find('[data-entries]');body.replaceChildren();
-  for(const entry of data.entries){const row=document.createElement('tr');for(const value of [entry.name,entry.email,entry.groupSize,entry.status.replaceAll('_',' ')]){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}body.append(row);}
+  for(const entry of data.entries){const row=document.createElement('tr');for(const value of [entry.name,entry.email,[entry.city,entry.stateProvince,entry.country].filter(Boolean).join(', '),entry.groupSize,entry.status.replaceAll('_',' ')]){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}body.append(row);}
   find('[data-pagination]').textContent=data.total?`${offset+1}–${Math.min(offset+data.entries.length,data.total)} of ${data.total} groups`:'No entries yet.';
   find('[data-previous]').disabled=offset===0;
   find('[data-next]').disabled=offset+50>=data.total;

@@ -91,6 +91,16 @@ The November 4 feature requires Pages, Worker and additive migration [`0002_medi
 
 Rollback can retain the additive columns. A Worker rollback to the old consent contract makes the new forms wait, and old pages can still accept legacy entries; those records must never be described as having recording consent. Prefer a forward fix that preserves required agreement. Do not drop columns, restore a stale database, mark old entries as consenting or change drawing eligibility as a code rollback. The default animation remains available when configuration cannot be loaded initially; a later config failure retains the last known display and the direct stream link stays available for player problems.
 
+## Group size and location release
+
+The eight-person group cap and required city/state-province/country fields require additive migration [`0003_entry_location.sql`](../api/migrations/0003_entry_location.sql), Pages and the Worker. Make a fresh private backup and verify it can be restored to isolated SQLite before applying the migration to the existing D1 database. Check the count of existing groups over eight privately; do not truncate, remove or change their drawing eligibility as part of a code release.
+
+The migration adds nullable location columns without backfilling USA or changing existing entries, settings, revision or fixed ranks. Test both fresh installation and legacy migration locally. The prior Worker remains compatible with the additional columns.
+
+Release and verify Pages, then promptly deploy the Worker. New forms wait for matching `entryFormVersion: "group-location-2026-11-04"`, `maxGroupSize: 8` and the recording-consent version. Stale clients receive a refresh instruction from the new Worker. This short release gap does not change the stored registration flag. Verify the exact Pages workflow, public health/config, required location fields, editable default Country USA, the 1–8 dropdown in both forms, and regular checkbox type. Use isolated tests for submissions and owner edits, not real registration or login emails.
+
+Keep the additive columns on rollback. A rollback of only the Worker hides the new forms; a rollback of both Worker and Pages restores the old permissive entry contract. Prefer a forward fix retaining the required location and eight-person limit. Never restore stale data or backfill unprovided location to make old code appear compatible.
+
 ## Email queue and recovery
 
 Implementation: [`api/src/mail.js`](../api/src/mail.js). Creation of verification/login tokens and their encrypted mail jobs is batched. Entry/login requests schedule a prompt background send attempt; winner publication only queues IDs, with delivery performed by cron. Winner jobs freeze their encrypted payload before the first provider request and reuse it on retries.
