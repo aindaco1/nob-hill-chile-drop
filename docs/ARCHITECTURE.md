@@ -26,6 +26,7 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Public facts, labels, navigation, FAQ | [`_data/event.yml`](../_data/event.yml) |
 | Hosting, API URL, indexing, cache version | [`_config.yml`](../_config.yml) |
 | Homepage structure | [`index.html`](../index.html) |
+| Venue map | Native OpenStreetMap iframe in [`index.html`](../index.html); address/URLs in [`_data/event.yml`](../_data/event.yml); frame and color treatment in [`assets/css/main.scss`](../assets/css/main.scss) |
 | Shared page chrome and metadata | [`_layouts/default.html`](../_layouts/default.html), [`_includes/head.html`](../_includes/head.html) |
 | Entry form and shared hours | [`_includes/entry-form.html`](../_includes/entry-form.html), [`_includes/hot-spot-hours.html`](../_includes/hot-spot-hours.html) |
 | Visual system, responsive layout, animation CSS | [`assets/css/main.scss`](../assets/css/main.scss) |

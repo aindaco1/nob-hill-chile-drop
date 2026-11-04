@@ -3,6 +3,10 @@ import AxeBuilder from '@axe-core/playwright';
 import { waitForStableRendering,applyTextScale } from '../../shared/dust-wave-platform/packages/test-core/src/rendering.js';
 const api='https://nob-hill-chile-drop-api.jogo.workers.dev';
 const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-headers':'Content-Type, Authorization','access-control-allow-methods':'GET, POST, PATCH, DELETE, OPTIONS'};
+// Keep the third-party map out of CI; actual tiles/controls are checked visually at release.
+test.beforeEach(async({page})=>{
+  await page.route('https://www.openstreetmap.org/export/embed.html?*',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="en"><title>Venue map</title><body><p>Hotel Zazz map preview</p><a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></body></html>'}));
+});
 async function mock(page,handler){await page.route(api+'/**',async route=>{if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers});const path=new URL(route.request().url()).pathname;const body=handler?await handler(path,route.request()):{registrationOpen:true,capacity:2000};return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify(path==='/api/config'?{mediaConsentVersion:'hot-spot-media-2026-11-04',...body}:body)});});}
 test('responsive pages, landmarks and asset paths work at the GitHub project subpath',async({page,request})=>{
   await mock(page);const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -24,6 +28,26 @@ test('countdown sits below the header and the hero fits the first desktop and ph
     await expect(page.locator('.hero__actions .button')).toBeInViewport({ratio:1});
     await expect(page.locator('.hero__details')).toContainText('Hot Spot opens at 10pm MT');
   }
+});
+test('drawing invitation reaches the form and the venue map has a usable external fallback',async({page})=>{
+  await mock(page);await page.goto('./');
+  const invite=page.locator('.hero__actions a');
+  await expect(invite).toHaveCount(1);
+  await invite.focus();await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/#hot-spot$/);
+  await expect(page.locator('[data-entry-form]')).toBeVisible();
+  const map=page.locator('.venue-map iframe');
+  await map.scrollIntoViewIfNeeded();
+  await expect(map).toHaveAttribute('title',/Hotel Zazz/);
+  await expect(map).toHaveAttribute('loading','lazy');
+  const url=new URL(await map.getAttribute('src'));
+  expect(url.origin).toBe('https://www.openstreetmap.org');
+  expect(url.searchParams.get('marker')).toMatch(/^[-\d.]+,[-\d.]+$/);
+  const fallback=page.getByRole('link',{name:'View larger map'});
+  await fallback.focus();await expect(fallback).toBeFocused();
+  await expect(fallback).toHaveAttribute('href',/^https:\/\/www\.openstreetmap\.org\//);
+  await page.setViewportSize({width:320,height:568});await applyTextScale(page,200);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 test('entry validates and sends one free group, then shows a confirmation instruction',async({page})=>{
   let submitted;await mock(page,(path,request)=>{if(path==='/api/entries'){submitted=request.postDataJSON();return{ok:true};}return{registrationOpen:true};});
@@ -73,7 +97,7 @@ test('display refresh swaps the fixed embed without reloading it and restores mo
   await mockStream(page);
   await page.goto('./');
   await expect(page.locator('[data-entry-form]')).toBeVisible();
-  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(page.locator('[data-stream-player] iframe')).toHaveCount(0);
   await page.getByRole('button',{name:'Pause animation',exact:true}).focus();
   mode='channel26';await page.clock.fastForward(60_000);
   const frame=page.locator('[data-stream-player] iframe');

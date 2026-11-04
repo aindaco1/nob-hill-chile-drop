@@ -22,13 +22,14 @@ hero:
   line_two: Chile Drop
   description: One very Albuquerque way to welcome the new year.
   primary_label: Enter the free drawing
-  secondary_label: Watch without Hot Spot access
 access:
   name: The Hot Spot
+  form_title: Enter the drawing
   status: Free drawing · 2,000 guest capacity
   description: Watch the drop up close, listen to the music, and buy a drink in the Hot Spot at Hotel Zazz. Enter the free drawing below for a chance at admission.
   alcohol_heading: Alcohol sales in the Hot Spot
   alcohol_note: Drinks are purchased separately. Hot Spot admission does not include alcohol.
+  alcohol_id_policy: To purchase alcohol in the Hot Spot, you must be 21 or older. We accept any non-expired ID card issued by a federal, state or municipal government that includes your photo and a birth date showing you are at least 21 years old. Have your ID ready for bar staff.
   opens_at: "2026-12-31T22:00:00-07:00"
   opens_label: "10 p.m."
   alcohol_ends_at: "2026-12-31T23:30:00-07:00"
@@ -51,6 +52,9 @@ film:
   poster: /assets/art/chile-sign.svg
 visit:
   title: Getting here
+  address: 3711 Central Ave NE, Albuquerque, NM 87108
+  map_embed_url: https://www.openstreetmap.org/export/embed.html?bbox=-106.6061%2C35.0781%2C-106.5991%2C35.0821&layer=mapnik&marker=35.080089%2C-106.602618
+  map_url: https://www.openstreetmap.org/?mlat=35.080089&mlon=-106.602618#map=17/35.080089/-106.602618
   note: We'll post the viewing map, parking, street access, and accessibility details here before the event.
 faq:
   - question: When does the chile drop?
