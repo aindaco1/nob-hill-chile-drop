@@ -113,7 +113,7 @@ h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
 .hero__stream>.eyebrow{color:var(--lime);margin-bottom:.5rem}
 .hero__player{position:relative;width:100%;aspect-ratio:3/2;background:#000;border:1px solid var(--line)}
 .hero__player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.hero__stream>.text-link{font-size:.9375rem;margin-top:.5rem;gap:.5rem}
+.hero__stream-controls .text-link{font-size:.9375rem;margin-top:.5rem;gap:.5rem}
 .legal li+li{margin-top:.75rem}
 .legal{overflow-wrap:anywhere}
 @media(max-width:760px){
@@ -124,7 +124,7 @@ h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
   .hero--stream .hero__details{grid-row:6}
 }
 
-// A bright, steady drawing invitation; the chile remains the only moving accent.
+// A bright, steady drawing invitation against the falling chile backdrop.
 .button--drawing{background:var(--red);color:var(--ink);border:2px solid var(--ink);box-shadow:4px 4px 0 var(--lime);font-weight:600}
 .button--drawing>span{display:grid;place-items:center;flex-shrink:0;width:1.75rem;height:1.75rem;border-radius:50%;background:var(--ink);color:var(--lime);font-size:1.2rem}
 .button--drawing:hover{background:#ff9988;box-shadow:5px 6px 0 var(--lime)}
@@ -143,3 +143,32 @@ h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
 @media(max-width:1099px){.visit{grid-template-columns:repeat(2,minmax(0,1fr))}.visit__viewing{grid-column:1/-1;max-width:70ch}}
 @media(max-width:760px){.visit{grid-template-columns:minmax(0,1fr)}.visit__viewing{grid-column:auto}.venue-map iframe{height:260px}.venue-map__label>span:last-child{margin-left:0}}
 @media(forced-colors:active){.hot-spot:before,.hot-spot:after{display:none}.venue-map iframe{filter:none}.button--drawing{box-shadow:none;border-color:ButtonText}}
+
+// Reuse the photographic cutout: the fixed rotation keeps the stem at the top.
+// Only the clipped decorative layer moves; content, navigation and focus stay above it.
+.has-chile-backdrop{position:relative;isolation:isolate}
+.falling-chiles{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict}
+.falling-chiles__drop{position:absolute;left:var(--x);top:var(--rest);width:0;height:calc(100% + 240px);opacity:.14}
+.falling-chiles__drop:before{content:'';position:absolute;width:var(--size);aspect-ratio:640/427;background:url('../art/chile-photo-cutout.webp') center/contain no-repeat;transform:translate(-50%,-50%) rotate(-58deg)}
+.falling-chiles__drop:nth-child(1){--x:8%;--rest:24%;--size:132px;--duration:24s;--delay:-6s}
+.falling-chiles__drop:nth-child(2){--x:26%;--rest:68%;--size:164px;--duration:31s;--delay:-23s}
+.falling-chiles__drop:nth-child(3){--x:43%;--rest:42%;--size:118px;--duration:27s;--delay:-12s}
+.falling-chiles__drop:nth-child(4){--x:62%;--rest:82%;--size:150px;--duration:35s;--delay:-30s}
+.falling-chiles__drop:nth-child(5){--x:79%;--rest:16%;--size:124px;--duration:29s;--delay:-5s}
+.falling-chiles__drop:nth-child(6){--x:94%;--rest:56%;--size:176px;--duration:33s;--delay:-19s}
+.falling-chiles.has-fall-animation .falling-chiles__drop{top:-120px;animation:chile-background-fall var(--duration) linear var(--delay) infinite;animation-play-state:paused}
+.falling-chiles.is-dropping .falling-chiles__drop{animation-play-state:running}
+@keyframes chile-background-fall{from{transform:translateY(0)}to{transform:translateY(100%)}}
+.site-header .falling-chiles__drop{opacity:.1}
+.hero__stream-controls{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;margin-top:.5rem}
+.motion-toggle--inline{position:static;width:auto;height:auto;min-height:44px;padding:.3rem .75rem;font-size:.875rem;border-radius:3px}
+.motion-toggle--inline:after,.motion-toggle--inline.is-paused:after{content:none}
+.footer-bottom{flex-wrap:wrap;align-items:center}
+@media(max-width:760px){
+  .falling-chiles__drop:nth-child(n+4){display:none}
+  .falling-chiles__drop:nth-child(1){--x:12%;--size:108px}
+  .falling-chiles__drop:nth-child(2){--x:52%;--size:132px}
+  .falling-chiles__drop:nth-child(3){--x:88%;--size:116px}
+}
+@media(prefers-reduced-motion:reduce){.falling-chiles.has-fall-animation .falling-chiles__drop{top:var(--rest);transform:none}}
+@media(forced-colors:active){.falling-chiles{display:none}}

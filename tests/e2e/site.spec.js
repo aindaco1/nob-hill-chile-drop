@@ -107,6 +107,10 @@ test('display refresh swaps the fixed embed without reloading it and restores mo
   await expect(frame).toHaveAttribute('src',streamUrl);
   await expect(page.locator('.hero__art')).toBeHidden();
   await expect(page.locator('#hero-title')).toBeFocused();
+  const backgroundControl=page.locator('.hero__stream [data-motion-toggle]');
+  await expect(backgroundControl).toBeVisible();await backgroundControl.click();
+  await expect(backgroundControl).toHaveAccessibleName('Resume background animation');
+  await expect.poll(()=>page.locator('.hero .falling-chiles__drop').first().evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
   await frame.evaluate(el=>el.dataset.retained='yes');
   await page.clock.fastForward(60_000);
   await expect(frame).toHaveAttribute('data-retained','yes');
@@ -121,7 +125,7 @@ test('display refresh swaps the fixed embed without reloading it and restores mo
   await expect(frame).toHaveCount(0);
   await expect(page.locator('.hero__art')).toBeVisible();
   await expect(page.locator('#hero-title')).toBeFocused();
-  await expect(page.locator('[data-motion-toggle]')).toBeHidden();
+  await expect(page.locator('[data-motion-toggle]:visible')).toHaveCount(0);
 });
 test('stream and rules reflow on small phones and with enlarged text',async({page})=>{
   await mock(page,()=>({registrationOpen:true,heroMedia:'channel26'}));await mockStream(page);
@@ -254,4 +258,46 @@ test('location fields default country, block incomplete locations and offer only
   await expect(page.locator('[data-page-status]')).toContainText('saved');
   expect(submissions[1]).toMatchObject({city:'Montréal',stateProvince:'Québec',country:'Canada',entryFormVersion});
   await expect(page.locator('[name=city]')).toHaveValue('Montréal');
+});
+
+
+test('photographic chiles fall vertically and share pause state across the page',async({page})=>{
+  await mock(page);await page.goto('./');
+  const hero=page.locator('.hero [data-falling-chiles]');
+  const drop=hero.locator('.falling-chiles__drop').first();
+  const footer=page.locator('.site-footer [data-falling-chiles]');
+  const footerDrop=footer.locator('.falling-chiles__drop').first();
+  await expect.poll(()=>drop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('running');
+  await expect.poll(()=>footerDrop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
+  const start=await drop.boundingBox();
+  await expect.poll(async()=>{const next=await drop.boundingBox();expect(Math.abs(next.x-start.x)).toBeLessThan(.1);return next.y-start.y;}).toBeGreaterThan(3);
+  await page.getByRole('button',{name:'Pause animation',exact:true}).click();
+  const time=await drop.evaluate(el=>el.getAnimations()[0].currentTime);
+  await footer.scrollIntoViewIfNeeded();
+  await expect.poll(()=>footerDrop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
+  await expect(page.getByRole('button',{name:'Resume animations',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Resume animations',exact:true}).focus();await page.keyboard.press('Enter');
+  await expect.poll(()=>footerDrop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('running');
+  expect(await drop.evaluate(el=>el.getAnimations()[0].currentTime)).toBe(time);
+  await hero.scrollIntoViewIfNeeded();
+  await expect.poll(()=>drop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('running');
+  await expect.poll(()=>footerDrop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
+  // Exercise the hidden-document lifecycle without opening external pages or sending requests.
+  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
+  await expect.poll(()=>drop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
+  await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
+  await expect.poll(()=>drop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('running');
+});
+
+test('backgrounds are still with reduced motion, absent in forced colors and confined to the homepage',async({page})=>{
+  await mock(page);await page.emulateMedia({reducedMotion:'reduce'});await page.goto('./');
+  await expect(page.locator('[data-falling-chiles]')).toHaveCount(4);
+  await expect(page.locator('[data-motion-toggle]:visible')).toHaveCount(0);
+  expect(await page.locator('.falling-chiles__drop').evaluateAll(nodes=>nodes.every(node=>node.getAnimations().length===0))).toBe(true);
+  const layer=await page.locator('.hero [data-falling-chiles]').boundingBox();
+  const drop=await page.locator('.hero .falling-chiles__drop').first().boundingBox();
+  expect(drop.y).toBeGreaterThan(layer.y);expect(drop.y).toBeLessThan(layer.y+layer.height);
+  await page.emulateMedia({forcedColors:'active'});
+  await expect(page.locator('[data-falling-chiles]:visible')).toHaveCount(0);
+  await page.goto('entry/');await expect(page.locator('[data-falling-chiles]')).toHaveCount(0);
 });

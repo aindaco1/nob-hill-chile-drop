@@ -122,6 +122,7 @@ The November 4 additions cover required/versioned recording consent, legacy-entr
 | Copy, hours, venue, navigation, FAQ | `_data/event.yml`; inspect rendered page and rules/hours includes |
 | New date/edition/venue | Also search `api/src/worker.js`, `api/src/mail.js`, `scripts/prepare-assets.mjs`, `_config.yml`, rules, tests and docs for old values |
 | Drawing rules | Public rules/FAQ/form, Worker consent version and validation, algorithm/tests, API and Drawing guides must agree |
+| Falling photo backdrops | `_includes/falling-chiles.html`, homepage `chile_backdrops` flag, `_layouts/default.html`, `assets/css/main.scss`, existing lifecycle in `assets/js/main.js`. Keep all decorative layers non-interactive and hidden from assistive technology. Check vertical stem-up motion, synchronized pause (including stream mode), per-section visibility, reduced motion/no-JS stills and forced colors. |
 | Artwork | `assets/art/chile-sign.svg`; verify hero, mouse cursor and social card |
 | Footage | Approved `film.youtube_id`; adjust the content test that currently asserts it is empty; verify click-to-load and consent/privacy wording |
 | Entry fields and group-size limit | `_data/event.yml` `entry_form`, shared location include, entry/edit forms and scripts, Worker validation/status/admin/export/erasure, additive migration, API/Drawing/Privacy guides. Keep form version and max size aligned in YAML and Worker. Test required location, 1–8 boundaries, migration preservation, safe CSV and erasure. |

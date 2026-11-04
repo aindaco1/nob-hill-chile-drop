@@ -30,6 +30,7 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Shared page chrome and metadata | [`_layouts/default.html`](../_layouts/default.html), [`_includes/head.html`](../_includes/head.html) |
 | Entry form and shared hours | [`_includes/entry-form.html`](../_includes/entry-form.html), [`_includes/hot-spot-hours.html`](../_includes/hot-spot-hours.html) |
 | Visual system, responsive layout, animation CSS | [`assets/css/main.scss`](../assets/css/main.scss) |
+| Falling photographic chile decoration | [`_includes/falling-chiles.html`](../_includes/falling-chiles.html), opted in by homepage front matter; shared lifecycle in `main.js`, CSS rotation/vertical translation reuse the existing WebP |
 | Countdown, animation lifecycle, cursor, video | [`assets/js/main.js`](../assets/js/main.js) |
 | Public registration | [`assets/js/entry.js`](../assets/js/entry.js) |
 | Homepage media and public config refresh | [`assets/js/hero-media.js`](../assets/js/hero-media.js), [`assets/js/entry.js`](../assets/js/entry.js) |

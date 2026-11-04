@@ -2,27 +2,37 @@
   'use strict';
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const scene = document.querySelector('[data-drop-scene]');
-  const motionToggle = document.querySelector('[data-motion-toggle]');
-  if (scene && motionToggle) {
-    let visible = false;
+  const backdrops = Array.from(document.querySelectorAll('[data-falling-chiles]'));
+  const motionTargets = [scene, ...backdrops].filter(Boolean);
+  const motionToggles = Array.from(document.querySelectorAll('[data-motion-toggle]'));
+  if (motionTargets.length && motionToggles.length) {
+    const visible = new Set();
     let paused = false;
     const syncMotion = () => {
-      scene.classList.toggle('is-dropping', visible && !paused && !document.hidden && !reducedMotion.matches);
-      motionToggle.hidden = reducedMotion.matches;
-      motionToggle.textContent = paused ? 'Resume animation' : 'Pause animation';
-      motionToggle.setAttribute('aria-label', motionToggle.textContent);
-      motionToggle.classList.toggle('is-paused', paused);
+      for (const target of motionTargets) {
+        target.classList.toggle('is-dropping', visible.has(target) && !paused && !document.hidden && !reducedMotion.matches);
+      }
+      for (const toggle of motionToggles) {
+        toggle.hidden = reducedMotion.matches;
+        toggle.textContent = `${paused ? 'Resume' : 'Pause'} ${toggle.dataset.motionLabel || 'animation'}`;
+        toggle.setAttribute('aria-label', toggle.textContent);
+        toggle.classList.toggle('is-paused', paused);
+      }
     };
-    scene.classList.add('has-drop-animation');
-    motionToggle.addEventListener('click', () => { paused = !paused; syncMotion(); });
+    scene?.classList.add('has-drop-animation');
+    backdrops.forEach(backdrop => backdrop.classList.add('has-fall-animation'));
+    motionToggles.forEach(toggle => toggle.addEventListener('click', () => { paused = !paused; syncMotion(); }));
     reducedMotion.addEventListener('change', syncMotion);
     document.addEventListener('visibilitychange', syncMotion);
-    // Keep the loop's position when the illustration or browser tab is out of view.
+    // Each scene keeps its position while offscreen, paused or in a hidden tab.
     const observer = new IntersectionObserver(entries => {
-      visible = entries.some(entry => entry.isIntersecting);
+      for (const entry of entries) {
+        if (entry.isIntersecting) visible.add(entry.target);
+        else visible.delete(entry.target);
+      }
       syncMotion();
     });
-    observer.observe(scene);
+    motionTargets.forEach(target => observer.observe(target));
     syncMotion();
   }
 

@@ -1,5 +1,6 @@
 ---
 layout: default
+chile_backdrops: true
 form_script: /assets/js/entry.js
 ---
 {% assign e = site.data.event %}
@@ -13,7 +14,8 @@ form_script: /assets/js/entry.js
   </div>
   <noscript><p class="no-js-countdown">The chile drops January 1, 2027 at 12:00 a.m. Mountain Time.</p></noscript>
 </section>
-<section class="hero wrap" aria-labelledby="hero-title">
+<section class="hero wrap has-chile-backdrop" aria-labelledby="hero-title">
+  {% include falling-chiles.html %}
   <div class="hero__copy">
     <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>{{ e.hero.eyebrow }}</p>
     <h1 id="hero-title" tabindex="-1">{{ e.hero.line_one }}<br><span>{{ e.hero.line_two }}</span></h1>
@@ -29,7 +31,7 @@ form_script: /assets/js/entry.js
   <div class="hero__stream" data-hero-stream hidden>
     <p class="eyebrow">Channel 26</p>
     <div class="hero__player" data-stream-player data-stream-url="{{ e.stream.url | escape }}" data-stream-title="{{ e.stream.title | escape }}"></div>
-    <a class="text-link" href="{{ e.stream.url | escape }}" target="_blank" rel="noopener noreferrer">Open stream in a new tab ↗</a>
+    <div class="hero__stream-controls"><a class="text-link" href="{{ e.stream.url | escape }}" target="_blank" rel="noopener noreferrer">Open stream in a new tab ↗</a><button class="motion-toggle motion-toggle--inline" type="button" data-motion-toggle data-motion-label="background animation" hidden>Pause background animation</button></div>
   </div>
 </section>
 
@@ -53,4 +55,4 @@ form_script: /assets/js/entry.js
   </figure>
   <div class="visit__viewing" id="watch"><h3>{{ e.viewing.title }}</h3><p>{{ e.viewing.description }}</p><p class="visit__note">{{ e.visit.note }}</p></div>
 </section>
-<section class="faq section wrap" aria-labelledby="faq-title"><h2 id="faq-title">Questions?</h2><div>{% for item in e.faq %}<details><summary>{{ item.question }}<span aria-hidden="true">+</span></summary><p>{{ item.answer }}</p></details>{% endfor %}<a class="text-link" href="{{ '/drawing-rules/' | relative_url }}">Read the drawing rules <span aria-hidden="true">↗</span></a></div></section>
+<section class="faq section wrap has-chile-backdrop" aria-labelledby="faq-title">{% include falling-chiles.html %}<h2 id="faq-title">Questions?</h2><div>{% for item in e.faq %}<details><summary>{{ item.question }}<span aria-hidden="true">+</span></summary><p>{{ item.answer }}</p></details>{% endfor %}<a class="text-link" href="{{ '/drawing-rules/' | relative_url }}">Read the drawing rules <span aria-hidden="true">↗</span></a></div></section>
