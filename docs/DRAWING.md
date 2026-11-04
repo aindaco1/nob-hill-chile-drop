@@ -6,13 +6,15 @@ This guide describes the implemented behavior. The public-facing version is [dra
 
 ## Guest lifecycle
 
-1. Submit a name, email, group size including the entrant, and agreement to the rules. The size must be an integer from 1 through 2,000.
+1. Submit a name, email, group size including the entrant, agreement to the drawing/Hot Spot rules and privacy notice, and separate recording consent. The size must be an integer from 1 through 2,000. The Worker requires the current recording-consent version and records its version and timestamp; both agreements are required again for owner edits.
 2. Confirm the email through the single-use link. Only verified entries participate. Email is trimmed/lowercased and unique; submitting an existing email sends access to its owner without overwriting their group.
 3. Use the private entry page to change name/size while registration is open. Changing the email address is not supported by this form/API.
 4. After registration closes, no new entries, first-time verifications or group edits are accepted. Already-verified owners can still request a link to see their status.
 5. After publication, selected groups receive an email. Every verified entrant can view their own selected/waitlisted status privately. Unselected groups do not receive a separate results email in the current implementation.
 
 One entry per email is an ownership/deduplication rule, not proof of one real person or household. There is no stronger identity or cross-address duplicate detection. Link lifetime and rate limits are in [API](API.md).
+
+The November 4 consent migration does not backfill agreement or change existing entrants' eligibility. A duplicate public submission cannot add consent to someone else's entry. An authenticated owner can record it while editing an open entry. The checkbox records only that entrant's agreement; the rules ask them to share the notice with their guests. No retrospective email or new admission/check-in process is triggered.
 
 ## Selection algorithm
 
@@ -46,6 +48,8 @@ The [organizer desk](https://aindaco1.github.io/nob-hill-chile-drop/admin/) uses
 | Follow through | Check queue/provider status and provide the separately approved arrival/check-in instructions. The application does not issue admission QR codes or check people in. |
 
 Prepare, commit and publish are separate deliberate steps. Nothing schedules or automatically runs the drawing. The configured cron only dispatches mail, cleans expired auth/rate-limit records and queues weekly reports. Closing registration does not cancel a valid already-verified owner's access.
+
+**Homepage display** is independent of these steps. Choose “Chile animation” or “Channel 26 stream” and save. The setting persists and open, visible homepages update within a minute; it remains available after preparation/publication. It does not close entry, alter the fixed order or queue email. The player also links directly to Channel 26 if playback is unavailable in the embed.
 
 There is no reset/reroll endpoint. Do not delete the preview or change database rows to get a different outcome. If an operational issue arises after preparation, preserve the fixed order and seek an explicit organizer decision before changing its treatment.
 

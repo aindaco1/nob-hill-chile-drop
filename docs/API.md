@@ -19,13 +19,13 @@ Implementation: [`api/src/worker.js`](../api/src/worker.js). Production base: `h
 | --- | --- | --- | --- |
 | `GET /health` | None | — | 200 `{ok, emailConfigured}`; reads settings and checks mail configuration shape |
 | `GET /api/config` | None | — | 200 public settings and event metadata, below |
-| `POST /api/entries` | Origin | `{name, email, groupSize, consent: true}` | 202 generic acknowledgment; queues a verification/access link |
+| `POST /api/entries` | Origin | `{name, email, groupSize, consent: true, mediaConsent: true, mediaConsentVersion}` | 202 generic acknowledgment; queues a verification/access link |
 | `POST /api/entries/link` | Origin | `{email}` | 202 same generic acknowledgment whether an entry exists or not |
 | `POST /api/entries/verify` | Origin | `{token}` | 200 `{accessToken, expiresAt, entry}` |
 | `GET /api/entries/status` | Entry Bearer + Origin | — | 200 `{entry}` |
-| `PATCH /api/entries` | Entry Bearer + Origin | `{name, groupSize, consent: true}` | 200 `{entry}`; only while verified, open and unlocked |
+| `PATCH /api/entries` | Entry Bearer + Origin | `{name, groupSize, consent: true, mediaConsent: true, mediaConsentVersion}` | 200 `{entry}`; only while verified, open and unlocked |
 
-`name` is trimmed, 1–120 characters with control characters rejected. `email` is normalized and validated, at most 254 characters. `groupSize` must be a JSON integer, 1–2000 (not a numeric string); consent must be literal `true`. Email cannot be changed with PATCH.
+`name` is trimmed, 1–120 characters with control characters rejected. `email` is normalized and validated, at most 254 characters. `groupSize` must be a JSON integer, 1–2000 (not a numeric string); `consent` and `mediaConsent` must be literal `true`. `mediaConsentVersion` must match `hot-spot-media-2026-11-04`; missing, false or stale recording agreement fails with 400 before an entry or mail job is created. New entries and owner edits store the version and acceptance time. Duplicate public registration never updates these fields on an existing entry. Email cannot be changed with PATCH.
 
 The generic acknowledgment intentionally avoids account enumeration:
 
@@ -45,11 +45,13 @@ Public config contains:
 | `registrationOpen` | Stored registration flag **and** mail readiness; can be false even if the stored flag is open |
 | `capacity`, `locked`, `revision` | Current capacity, whether an immutable preview exists, and settings/entry revision |
 | `freeEntry`, `priceCents`, `maxGroupSize` | `true`, `0`, `2000` |
-| `consentVersion` | Current required consent revision (`free-drawing-2026-10-27` at this review) |
+| `consentVersion` | Current rules consent revision: `free-drawing-2026-11-04` |
+| `mediaConsentVersion` | Required recording-consent revision: `hot-spot-media-2026-11-04` |
+| `heroMedia` | `animation` (default) or `channel26`; a display choice, independent of drawing state |
 | `resultsPublished`, `results` | Boolean and either null or `{selectedOrders, selectedPeople}`; no identities |
 | `eventDate`, `dropTime`, `timezone` | Event date, explicit midnight instant and IANA zone; currently hardcoded in Worker source |
 
-An entry object contains `id`, `name`, `email`, `groupSize`, `verified`, `status`, `canEdit` and `createdAt`. Status is `pending_verification`, `entered`, `selected` or `waitlisted`. Entrants see only `entered` until results are published. Returned `createdAt`/`expiresAt` values are ISO timestamps; database and CSV timestamps use epoch milliseconds.
+An entry object contains `id`, `name`, `email`, `groupSize`, `verified`, `status`, `canEdit`, `createdAt` and `requiredMediaConsentVersion` (the current recording-consent contract, not proof of the entry's past acceptance). Status is `pending_verification`, `entered`, `selected` or `waitlisted`. Entrants see only `entered` until results are published. Returned `createdAt`/`expiresAt` values are ISO timestamps; database and CSV timestamps use epoch milliseconds. The new forms hide submission/editing if the service reports an incompatible or missing recording-consent version.
 
 ## Organizer routes
 
@@ -60,10 +62,13 @@ An entry object contains `id`, `name`, `email`, `groupSize`, `verified`, `status
 | `GET /api/admin/entries` | Admin Bearer + Origin | `limit` 1–200, default 50; `offset` ≥0, default 0; both integers | 200 dashboard snapshot |
 | `GET /api/admin/entries.csv` | Admin Bearer + Origin | — | 200 private `text/csv` attachment |
 | `PATCH /api/admin/settings` | Admin Bearer + Origin | `{registrationOpen?: boolean, capacity?: integer}`; at least one field | 200 `{settings}`; immutable once prepared |
+| `PATCH /api/admin/display` | Admin Bearer + Origin | `{heroMedia: "animation" \| "channel26"}`; no other fields | 200 `{settings}`; available before and after preparation/publication |
 | `POST /api/admin/draw/preview` | Admin Bearer + Origin | `{}` | 200 fixed preview; **first call prepares and locks the drawing** |
 | `POST /api/admin/draw/commit` | Admin Bearer + Origin | `{previewId}` | 200 `{ok, previewId, committedAt, published}` |
 | `POST /api/admin/draw/publish` | Admin Bearer + Origin | `{}` | 200 `{ok, publishedAt, queuedWinnerEmails}`; repeat returns `alreadyPublished: true` |
 | `DELETE /api/admin/entries/:id` | Admin Bearer + Origin | UUID path parameter | 200 `{ok, action: "deleted"}` before preparation, or `"anonymized"` afterward |
+
+Display changes update only `settings.hero_media` and add a `display_updated` audit record in one batch. They do not advance the drawing revision, change entries/capacity/registration, or queue messages. Repeating the same display value has the same visible effect. Arbitrary iframe URLs/HTML are not accepted.
 
 The dashboard snapshot contains:
 

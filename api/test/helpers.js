@@ -1,11 +1,14 @@
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createWorker } from '../src/worker.js';
 import { decodePayload } from '../src/mail.js';
 
 export function database() {
   const sqlite = new DatabaseSync(':memory:');
-  sqlite.exec(readFileSync(new URL('../migrations/0001_drawing.sql', import.meta.url), 'utf8'));
+  const migrations = new URL('../migrations/', import.meta.url);
+  for (const file of readdirSync(migrations).filter(file => file.endsWith('.sql')).sort()) {
+    sqlite.exec(readFileSync(new URL(file, migrations), 'utf8'));
+  }
   class Statement {
     constructor(sql, params = []) { this.sql = sql; this.params = params; }
     bind(...params) { return new Statement(this.sql, params); }

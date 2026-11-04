@@ -5,6 +5,7 @@ const feedback = find('[data-admin-status]');
 const login = find('[data-admin-login]');
 const dashboard = find('[data-admin-dashboard]');
 const settingsForm = find('[data-settings]');
+const displayForm = find('[data-display-settings]');
 const key = 'chile-drop-admin-session';
 let session = sessionStorage.getItem(key) || '';
 let snapshot, offset = 0;
@@ -16,6 +17,7 @@ function render(data) {
   find('[data-stats]').replaceChildren(stat('Verified groups',data.counts.verifiedOrders),stat('Guests in verified groups',data.counts.verifiedPeople),stat('Total groups',data.counts.totalOrders));
   settingsForm.elements.capacity.value=data.settings.capacity;
   settingsForm.elements.registrationOpen.checked=data.settings.registrationOpen;
+  displayForm.elements.heroMedia.value=data.settings.heroMedia || 'animation';
   for(const control of settingsForm.elements) control.disabled=data.settings.locked;
   find('[data-settings-note]').textContent=data.settings.locked?'The drawing has been prepared. Entry and capacity are locked.':'Open or close entry here. The drawing is always manual.';
   find('[data-preview]').disabled=data.settings.registrationOpen||Boolean(data.drawing);
@@ -40,6 +42,21 @@ if(token){status(feedback,'Confirming organizer sign-in…');try{const data=awai
 else if(session){try{await refresh();}catch(error){status(feedback,message(error),'error');}}
 login.addEventListener('submit',event=>{event.preventDefault();withSubmit(login,async()=>{try{await request('/api/admin/login',{method:'POST',body:{email:login.elements.email.value}});status(feedback,'If this is an authorized organizer email, a sign-in link will arrive shortly.','success');}catch(error){status(feedback,message(error),'error');}});});
 settingsForm.addEventListener('submit',event=>{event.preventDefault();withSubmit(settingsForm,async()=>{try{await request('/api/admin/settings',{method:'PATCH',body:{registrationOpen:settingsForm.elements.registrationOpen.checked,capacity:Number(settingsForm.elements.capacity.value)}},session);await refresh();status(feedback,'Registration settings saved.','success');}catch(error){status(feedback,message(error),'error');}});});
+displayForm.addEventListener('submit', event => {
+  event.preventDefault();
+  withSubmit(displayForm, async () => {
+    const feedback = find('[data-display-status]');
+    try {
+      const data = await request('/api/admin/display', { method: 'PATCH', body: { heroMedia: displayForm.elements.heroMedia.value } }, session);
+      snapshot.settings.heroMedia = data.settings.heroMedia;
+      displayForm.elements.heroMedia.value = data.settings.heroMedia;
+      status(feedback, data.settings.heroMedia === 'channel26' ? 'Homepage now shows Channel 26. Open pages update within a minute.' : 'Homepage now shows the chile animation. Open pages update within a minute.', 'success');
+    } catch (error) {
+      if (error.status === 401) { signout(); status(find('[data-admin-status]'), message(error), 'error'); }
+      else status(feedback, message(error), 'error');
+    }
+  });
+});
 find('[data-refresh]').addEventListener('click',event=>action(event.currentTarget,async()=>{status(feedback,'Entry list refreshed.','success');}));
 find('[data-admin-signout]').addEventListener('click',()=>{signout();status(feedback,'Signed out.');});
 find('[data-preview]').addEventListener('click',event=>action(event.currentTarget,async()=>{if(!snapshot.preview&&!find('[data-confirm-draw]').checked)throw new Error('Confirm that you understand preparing locks the drawing.');await request('/api/admin/draw/preview',{method:'POST',body:{}},session);status(feedback,'Random order prepared. Review the group and guest totals before committing.','success');}));

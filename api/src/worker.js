@@ -5,14 +5,15 @@ import { mailReady, prepareMail, mailStatement, dispatchOutbox, queueWeeklyRepor
 
 const MINUTE = 60_000;
 const DAY = 86_400_000;
-const CONSENT_VERSION = 'free-drawing-2026-10-27';
+const CONSENT_VERSION = 'free-drawing-2026-11-04';
+const MEDIA_CONSENT_VERSION = 'hot-spot-media-2026-11-04';
 const GENERIC = { ok: true, message: 'If this address can receive a link, check your email. Links may take a few minutes.' };
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 function fail(message, status = 400, code = 'invalid_request') { throw new RequestValidationError(message, code, status); }
 function admins(env) { return String(env.ADMIN_EMAILS || '').split(',').map(normalizeEmail).filter(Boolean); }
 function settingsView(row, env) {
-  return { registrationOpen: row.registration_open === 1 && mailReady(env), capacity: row.capacity, locked: Boolean(row.locked), revision: row.revision };
+  return { registrationOpen: row.registration_open === 1 && mailReady(env), capacity: row.capacity, locked: Boolean(row.locked), revision: row.revision, heroMedia: row.hero_media || 'animation' };
 }
 async function settings(env) {
   return env.DB.prepare('SELECT *, EXISTS(SELECT 1 FROM draw_preview) AS locked FROM settings WHERE id=1').first();
@@ -29,6 +30,7 @@ function entryFields(body) {
   if (!name || name.length > 120 || /[\x00-\x1f\x7f]/.test(name)) fail('Enter a name of up to 120 characters.');
   if (!Number.isInteger(body.groupSize) || body.groupSize < 1 || body.groupSize > 2000) fail('Group size must be a whole number from 1 to 2,000.');
   if (body.consent !== true) fail('Confirm the drawing rules and entry consent.');
+  if (body.mediaConsent !== true || body.mediaConsentVersion !== MEDIA_CONSENT_VERSION) fail('Agree to the current Hot Spot recording consent. Refresh the page if needed.');
   return { name, groupSize: body.groupSize };
 }
 function allowedOrigin(request, env) {
@@ -103,10 +105,10 @@ async function register(request, env, now) {
   if (!(await settings(env)).registration_open) fail('Drawing entries are closed.', 409, 'registration_closed');
   await rateLimit(env, `entry-email:${email}`, 3, 60 * MINUTE, now);
   // A public re-submission never changes a group's details. Only its verified owner can edit.
-  await env.DB.prepare(`INSERT OR IGNORE INTO entries (id,email,name,group_size,consent_version,created_at,updated_at)
-    SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM settings WHERE id=1 AND registration_open=1)
+  await env.DB.prepare(`INSERT OR IGNORE INTO entries (id,email,name,group_size,consent_version,created_at,updated_at,media_consent_version,media_consent_at)
+    SELECT ?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM settings WHERE id=1 AND registration_open=1)
     AND NOT EXISTS(SELECT 1 FROM draw_preview)`)
-    .bind(crypto.randomUUID(), email, fields.name, fields.groupSize, CONSENT_VERSION, now, now).run();
+    .bind(crypto.randomUUID(), email, fields.name, fields.groupSize, CONSENT_VERSION, now, now, MEDIA_CONSENT_VERSION, now).run();
   const entry = await env.DB.prepare('SELECT id,email FROM entries WHERE email=?').bind(email).first();
   if (entry) await sendEntryLink(env, entry, now);
   return GENERIC;
@@ -166,14 +168,15 @@ async function entryStatus(env, id) {
   if (!entry) fail('Entry not found.', 404);
   const config = await settings(env);
   return { id: entry.id, name: entry.name, email: entry.email, groupSize: entry.group_size,
+    requiredMediaConsentVersion: MEDIA_CONSENT_VERSION,
     verified: Boolean(entry.verified_at), status: entry.result || (entry.verified_at ? 'entered' : 'pending_verification'),
     canEdit: Boolean(config.registration_open && !config.locked), createdAt: new Date(entry.created_at).toISOString() };
 }
 async function updateEntry(request, env, id, now) {
   const fields = entryFields(await bodyOf(request));
-  const result = await env.DB.prepare(`UPDATE entries SET name=?,group_size=?,updated_at=?,consent_version=? WHERE id=?
+  const result = await env.DB.prepare(`UPDATE entries SET name=?,group_size=?,updated_at=?,consent_version=?,media_consent_version=?,media_consent_at=? WHERE id=?
     AND verified_at IS NOT NULL AND EXISTS(SELECT 1 FROM settings WHERE registration_open=1)
-    AND NOT EXISTS(SELECT 1 FROM draw_preview)`).bind(fields.name, fields.groupSize, now, CONSENT_VERSION, id).run();
+    AND NOT EXISTS(SELECT 1 FROM draw_preview)`).bind(fields.name, fields.groupSize, now, CONSENT_VERSION, MEDIA_CONSENT_VERSION, now, id).run();
   if (!result.meta.changes) fail('Changes are closed for this drawing.', 409, 'registration_closed');
   return { entry: await entryStatus(env, id) };
 }
@@ -209,6 +212,16 @@ async function updateSettings(request, env, actor, now) {
     audit(env, 'settings_requested', actor, now, { registrationOpen: body.registrationOpen, capacity: body.capacity })
   ]);
   if (!result[0].meta.changes) fail('A random drawing order is already prepared. Registration and capacity are locked.', 409, 'drawing_locked');
+  return { settings: settingsView(await settings(env), env) };
+}
+async function updateDisplay(request, env, actor, now) {
+  const body = await bodyOf(request);
+  if (!['animation', 'channel26'].includes(body.heroMedia) || Object.keys(body).some(key => key !== 'heroMedia')) fail('Choose the chile animation or Channel 26 stream.');
+  // Do not touch registration, capacity or revision: a prepared drawing stays valid.
+  await env.DB.batch([
+    env.DB.prepare('UPDATE settings SET hero_media=? WHERE id=1').bind(body.heroMedia),
+    audit(env, 'display_updated', actor, now, { heroMedia: body.heroMedia })
+  ]);
   return { settings: settingsView(await settings(env), env) };
 }
 async function previewDrawing(env, actor, now) {
@@ -320,7 +333,7 @@ export function createWorker(dependencies = {}) {
           const drawing = await env.DB.prepare('SELECT published_at FROM drawing WHERE id=1').first();
           const totals = drawing?.published_at ? await env.DB.prepare("SELECT COUNT(*) AS selectedOrders,COALESCE(SUM(e.group_size),0) AS selectedPeople FROM results r JOIN entries e ON e.id=r.entry_id WHERE r.status='selected'").first() : null;
           return reply(request, env, { ...settingsView(row, env), freeEntry: true, priceCents: 0, maxGroupSize: 2000,
-            consentVersion: CONSENT_VERSION, resultsPublished: Boolean(drawing?.published_at), results: totals,
+            consentVersion: CONSENT_VERSION, mediaConsentVersion: MEDIA_CONSENT_VERSION, resultsPublished: Boolean(drawing?.published_at), results: totals,
             eventDate: '2026-12-31', dropTime: '2027-01-01T00:00:00-07:00', timezone: 'America/Denver' });
         }
         if (!allowedOrigin(request, env)) fail('Origin is not allowed.', 403, 'origin_forbidden');
@@ -343,6 +356,7 @@ export function createWorker(dependencies = {}) {
           if (method === 'GET' && path === '/api/admin/entries') payload = await adminEntries(env, url);
           else if (method === 'GET' && path === '/api/admin/entries.csv') return reply(request, env, await exportEntries(env), 200, 'text/csv; charset=utf-8');
           else if (method === 'PATCH' && path === '/api/admin/settings') payload = await updateSettings(request, env, actor, now);
+          else if (method === 'PATCH' && path === '/api/admin/display') payload = await updateDisplay(request, env, actor, now);
           else if (method === 'POST' && path === '/api/admin/draw/preview') { await bodyOf(request); payload = await previewDrawing(env, actor, now); }
           else if (method === 'POST' && path === '/api/admin/draw/commit') payload = await commitDrawing(request, env, actor, now);
           else if (method === 'POST' && path === '/api/admin/draw/publish') { await bodyOf(request); payload = await publishDrawing(env, actor, now); }

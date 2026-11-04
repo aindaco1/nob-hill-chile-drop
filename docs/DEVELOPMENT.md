@@ -99,6 +99,8 @@ The baseline at application commit `3b45b14` contains 3 content tests, 23 API te
 
 Browser coverage includes project-subpath assets, responsive overflow, the above-fold hero, mocked entry/admin flows, closed/error states, keyboard navigation, motion controls, axe checks, 200% text enlargement, midnight countdown behavior and no-JavaScript information access. The hero matrix includes 320×568, 375×667, 390×844, 768×1024, 1024×768, 1280×720, 1366×768 and 1440×900.
 
+The November 4 additions cover required/versioned recording consent, legacy-entry migration preservation, consent-contract release gaps, authenticated display changes after drawing lock/publication, player replacement/removal and retention during config outages. Small-phone stream checks require a full-width player above the fold; supporting hero copy can continue below it. Rules and stream layouts are checked at 200% text size. The external player is stubbed in repeatable browser tests; actual playback requires a separate read-only browser check.
+
 [`playwright.config.js`](../playwright.config.js) runs Chromium only, starts the static server, and can reuse a local server outside CI. Check that a reused server serves this checkout rather than stale `_site` content. Failed-test traces go under ignored test artifacts. Mocked tests do not establish actual email delivery, production storage or physical-device acceptance. Visually inspect layout changes on desktop/mobile; check Safari/WebKit separately when relevant.
 
 ## Editing content and assets
@@ -110,6 +112,8 @@ Browser coverage includes project-subpath assets, responsive overflow, the above
 | Drawing rules | Public rules/FAQ/form, Worker consent version and validation, algorithm/tests, API and Drawing guides must agree |
 | Artwork | `assets/art/chile-sign.svg`; verify hero, mouse cursor and social card |
 | Footage | Approved `film.youtube_id`; adjust the content test that currently asserts it is empty; verify click-to-load and consent/privacy wording |
+| Hot Spot rules and recording consent | `hot-spot-rules.html`, `_data/event.yml` `media_consent`, shared checkbox include, Worker consent versions, API/Drawing/Privacy guides. Version material notice changes in YAML and Worker together. Do not backfill existing entrants' consent. |
+| Homepage Channel 26 stream | `_data/event.yml` `stream`, `assets/js/hero-media.js`, public config refresh in `entry.js`, separate admin display form and Worker endpoint. Exercise animation → stream → animation, config outages and drawing-locked saves with mocked APIs/player. |
 | CSS/JS release | Bump `_config.yml` `asset_version` when needed to invalidate cached assets |
 | Domain/API origin | Follow the coordinated cutover checklist in Operations |
 

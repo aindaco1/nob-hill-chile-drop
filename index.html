@@ -16,7 +16,7 @@ form_script: /assets/js/entry.js
 <section class="hero wrap" aria-labelledby="hero-title">
   <div class="hero__copy">
     <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>{{ e.hero.eyebrow }}</p>
-    <h1 id="hero-title">{{ e.hero.line_one }}<br><span>{{ e.hero.line_two }}</span></h1>
+    <h1 id="hero-title" tabindex="-1">{{ e.hero.line_one }}<br><span>{{ e.hero.line_two }}</span></h1>
     <p class="hero__intro">{{ e.hero.description }}</p>
     <div class="hero__actions"><a class="button button--lime" href="#hot-spot">{{ e.hero.primary_label }} <span aria-hidden="true">↗</span></a><a class="text-link" href="#watch">{{ e.hero.secondary_label }} <span aria-hidden="true">↓</span></a></div>
     <div class="hero__details"><span>{{ e.date_short }}<strong>{{ e.time_label }}</strong></span><span>{{ e.venue }}<strong>Nob Hill · Albuquerque</strong></span></div>
@@ -25,6 +25,11 @@ form_script: /assets/js/entry.js
     <span class="hero__year" aria-hidden="true">2027</span>
     <div class="hero__sign" data-drop-scene role="img" aria-label="A red chile wrapped in lime lights drops inside a blue neon ring.">{% include_relative assets/art/chile-sign.svg %}</div>
     <button class="motion-toggle" type="button" data-motion-toggle hidden>Pause animation</button>
+  </div>
+  <div class="hero__stream" data-hero-stream hidden>
+    <p class="eyebrow">Channel 26</p>
+    <div class="hero__player" data-stream-player data-stream-url="{{ e.stream.url | escape }}" data-stream-title="{{ e.stream.title | escape }}"></div>
+    <a class="text-link" href="{{ e.stream.url | escape }}" target="_blank" rel="noopener noreferrer">Open stream in a new tab ↗</a>
   </div>
 </section>
 

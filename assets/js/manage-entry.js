@@ -11,7 +11,9 @@ function render(entry) {
   const labels = { entered: 'Your email is confirmed. Your group is entered in the free drawing.', pending_verification: 'Your email needs confirmation.', selected: 'Your whole group has been selected for Hot Spot admission. Check your email for event instructions.', waitlisted: 'Your group is on the waitlist. You can still watch the drop from public vantage points.' };
   result.textContent = `${labels[entry.status] || 'Your group entry is recorded.'} Group size: ${entry.groupSize}.`;
   result.hidden = false; linkForm.hidden = true; signout.hidden = false;
-  editForm.hidden = !entry.canEdit;
+  const compatible = entry.requiredMediaConsentVersion === editForm.elements.mediaConsent.value;
+  editForm.hidden = !entry.canEdit || !compatible;
+  if (entry.canEdit && !compatible) result.textContent += ' Group editing is temporarily unavailable while the recording consent is updated. Please refresh in a moment.';
   editForm.elements.name.value = entry.name;
   editForm.elements.groupSize.value = entry.groupSize;
 }
@@ -38,7 +40,7 @@ linkForm.addEventListener('submit', event => {
 editForm.addEventListener('submit', event => {
   event.preventDefault();
   withSubmit(editForm, async () => {
-    try {const data = await request('/api/entries', {method:'PATCH',body:{name:editForm.elements.name.value,groupSize:Number(editForm.elements.groupSize.value),consent:editForm.elements.consent.checked}}, session); render(data.entry); status(feedback, 'Your group details have been saved.', 'success');}
+    try {const data = await request('/api/entries', {method:'PATCH',body:{name:editForm.elements.name.value,groupSize:Number(editForm.elements.groupSize.value),consent:editForm.elements.consent.checked,mediaConsent:editForm.elements.mediaConsent.checked,mediaConsentVersion:editForm.elements.mediaConsent.value}}, session); render(data.entry); status(feedback, 'Your group details have been saved.', 'success');}
     catch (error) {status(feedback, message(error), 'error');}
   });
 });

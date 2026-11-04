@@ -67,7 +67,7 @@ npm --prefix api test
 npm run api:check
 ```
 
-3. For schema changes, create a **new** migration; do not edit an already-applied migration. Review its effect on entries, fixed ranks, mail jobs and rollback compatibility. Test on local D1. The current in-memory test helper loads `0001_drawing.sql` directly, so extend it to apply subsequent migrations when adding one.
+3. For schema changes, create a **new** migration; do not edit an already-applied migration. Review its effect on entries, fixed ranks, mail jobs and rollback compatibility. Test on local D1. The in-memory test helper applies all `.sql` migrations in filename order.
 4. Before a remote migration, arrange a private database backup/recovery point. `wrangler d1 export` can produce a full SQL export; consult `npx wrangler d1 export --help` for the installed version and choose protected storage outside the repo/public artifacts. An export contains personal data, token hashes and encrypted mail; treat it accordingly. Check recovery procedures before a destructive migration.
 5. Apply pending reviewed migrations **only if needed**, then deploy:
 
@@ -79,6 +79,17 @@ npm --prefix api run deploy
 6. Record the returned Worker version ID. Inspect live bindings, secret **names**, traffic deployment and schedules. Run health/config probes and the task-specific read-only checks. Keep browser/API changes backward compatible across the independent releases.
 
 The dry run bundles code only. Migration success does not deploy new code; a successful upload does not prove the browser is using it, cron is configured, or mail is delivered.
+
+## Rules, consent and stream release
+
+The November 4 feature requires Pages, Worker and additive migration [`0002_media_consent_and_display.sql`](../api/migrations/0002_media_consent_and_display.sql). This procedure is for an authorized release; local tests are not release evidence.
+
+1. Follow the private backup/recovery-point procedure above. Apply the migration to the existing database. It adds nullable media-consent version/time without backfilling agreement and a homepage display column defaulting to `animation`. It does not change registration, capacity, ranks, results, outbox jobs or drawing revision. The old Worker is compatible with these added columns.
+2. Release and verify Pages, then promptly release the Worker. New forms wait for a matching media-consent contract; during the gap registration/edit submission is temporarily unavailable in the new UI, without changing the stored registration flag. Existing old pages receive a refresh instruction once the new Worker is live. Do not weaken consent validation to bridge the gap.
+3. Read `/health` and `/api/config`; verify `mediaConsentVersion: "hot-spot-media-2026-11-04"` and `heroMedia: "animation"`, plus unchanged registration/capacity/lock/revision relative to the release snapshot. Verify the exact Pages commit, public rules links, required unchecked checkbox, privacy notice and asset version. Do not register a real group or request a login email as a smoke test.
+4. The organizer can use **Homepage display** in an existing authenticated session to select Channel 26 and save, then restore animation at any time. A release does not itself enable the stream. This is separate from drawing controls and remains available after the drawing locks. Visible homepages poll once a minute; hidden tabs refresh when revisited. Verify actual stream playback separately from an embed loading or a mocked browser pass.
+
+Rollback can retain the additive columns. A Worker rollback to the old consent contract makes the new forms wait, and old pages can still accept legacy entries; those records must never be described as having recording consent. Prefer a forward fix that preserves required agreement. Do not drop columns, restore a stale database, mark old entries as consenting or change drawing eligibility as a code rollback. The default animation remains available when configuration cannot be loaded initially; a later config failure retains the last known display and the direct stream link stays available for player problems.
 
 ## Email queue and recovery
 

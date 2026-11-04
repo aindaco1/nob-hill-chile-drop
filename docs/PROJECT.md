@@ -53,6 +53,16 @@ See [Drawing](DRAWING.md) for precise eligibility and capacity behavior. Equal r
 
 Visual reference: [event Instagram](https://www.instagram.com/nobhillchiledrop/). Information-structure reference: [One Times Square](https://onetimessquare.com/nye-ball). These references do not establish this event's schedule or grant rights to reuse their media.
 
+## November 4 implementation: rules, consent and homepage stream
+
+This section describes source changes, not a production release. The dated live snapshot below remains the October 28 observation.
+
+- `/hot-spot-rules/` covers event admission/hours, designated-area access, relevant venue conduct/safety policies, belongings, photography and recording. It is linked from the entry forms, drawing rules and footer. Venue terms were reviewed against [Hotel Zazz's policies](https://www.hotelzazz.com/policies) on November 4; room reservations, charges, checkout, room visitors' curfew and hotel check-in age are not event conditions. The service-animal wording follows [DOJ guidance](https://www.ada.gov/topics/service-animals/), without importing room-specific restrictions.
+- Registration and owner edits require a separate, unchecked recording-consent checkbox. `_data/event.yml` owns the notice and its version. The notice covers appearance, voice and name in any media, throughout the universe in perpetuity, for event advertising, marketing and promotion. The Worker validates literal agreement and the current version, and records version/time. Existing entries are not retroactively marked as consenting; drawing eligibility is unchanged. The entrant is asked to share the notice with the group, not to claim consent on behalf of every guest.
+- **Organizer desk → Homepage display** switches between the chile animation (default) and the supplied Channel 26 player. This setting stays editable after drawing preparation/publication and never changes registration, capacity, ranks or the drawing revision. Visible homepages refresh configuration once a minute and when returning to the tab. A config outage retains the last known display; an initial outage leaves the animation.
+- The fixed embed uses Channel 26's own playback controls, a responsive 3:2 frame and an external fallback link. No frame loads in animation mode or on private entry/admin pages. Restoring animation removes the player. On narrow phones the stream spans the page width under the title; the player remains above the fold, with supporting hero copy below it. The animation layout retains its existing full-hero viewport fit.
+- Release requires additive migration `0002_media_consent_and_display.sql`, the Worker and Pages. New forms fail closed against an older consent contract; old forms receive a refresh instruction from the new Worker. See [Operations](OPERATIONS.md#rules-consent-and-stream-release) for sequencing and rollback limits.
+
 ## Remaining decisions and limitations
 
 These are a handoff list, not authorization to implement or publish them automatically.

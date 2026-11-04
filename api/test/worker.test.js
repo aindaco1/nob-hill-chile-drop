@@ -3,7 +3,64 @@ import assert from 'node:assert/strict';
 import { fixture } from './helpers.js';
 import { dispatchOutbox, prepareMail, mailStatement, queueWeeklyReport, decodePayload } from '../src/mail.js';
 
-const entry = { name: 'A Guest', email: 'guest@example.test', groupSize: 4, consent: true };
+const entry = { name: 'A Guest', email: 'guest@example.test', groupSize: 4, consent: true, mediaConsent: true, mediaConsentVersion: 'hot-spot-media-2026-11-04' };
+
+test('recording consent is required, versioned and saved only on an accepted entry or owner edit', async t => {
+  const f = fixture(); t.after(f.close);
+  for (const patch of [{ mediaConsent: undefined }, { mediaConsent: false }, { mediaConsent: 'true' }, { mediaConsentVersion: undefined }, { mediaConsentVersion: 'old' }]) {
+    assert.equal((await f.request('/api/entries', { method: 'POST', body: { ...entry, ...patch } })).status, 400);
+  }
+  assert.equal(f.DB.prepare('SELECT COUNT(*) AS count FROM entries').first().count, 0);
+  assert.equal(f.DB.prepare('SELECT COUNT(*) AS count FROM outbox').first().count, 0);
+  assert.equal((await f.request('/api/entries', { method: 'POST', body: entry })).status, 202);
+  const first = f.DB.prepare('SELECT * FROM entries').first();
+  assert.equal(first.media_consent_version, entry.mediaConsentVersion);
+  assert.equal(first.media_consent_at, f.now());
+  f.advance(1000);
+  await f.request('/api/entries', { method: 'POST', body: { ...entry, name: 'Not the owner' } });
+  assert.deepEqual(f.DB.prepare('SELECT * FROM entries').first(), first);
+  const verified = await f.request('/api/entries/verify', { method: 'POST', body: { token: await f.link('entry_link') } });
+  const token = verified.body.accessToken;
+  for (const mediaConsent of [undefined, false, 'true']) {
+    assert.equal((await f.request('/api/entries', { method: 'PATCH', token, body: { ...entry, groupSize: 9, mediaConsent } })).status, 400);
+  }
+  assert.equal(f.DB.prepare('SELECT group_size FROM entries').first().group_size, 4);
+  assert.equal((await f.request('/api/entries', { method: 'PATCH', token, body: { ...entry, groupSize: 9 } })).status, 200);
+  assert.equal(f.DB.prepare('SELECT media_consent_at FROM entries').first().media_consent_at, f.now());
+  // A public submission cannot retroactively record consent for a legacy entrant.
+  f.DB.prepare('UPDATE entries SET media_consent_version=NULL,media_consent_at=NULL').run();
+  await f.request('/api/entries', { method: 'POST', body: entry });
+  assert.equal(f.DB.prepare('SELECT media_consent_at FROM entries').first().media_consent_at, null);
+});
+
+test('only admins can switch display; switching never changes or invalidates a fixed drawing', async t => {
+  const f = fixture(); t.after(f.close);
+  assert.equal((await f.request('/api/config')).body.heroMedia, 'animation');
+  assert.equal((await f.request('/api/admin/display', { method: 'PATCH', body: { heroMedia: 'channel26' } })).status, 401);
+  const token = await f.admin();
+  for (const body of [{}, { heroMedia: 'https://evil.test' }, { heroMedia: null }, { heroMedia: 'channel26', registrationOpen: true }]) {
+    assert.equal((await f.request('/api/admin/display', { method: 'PATCH', token, body })).status, 400);
+  }
+  f.seedEntry(5);
+  await f.request('/api/admin/settings', { method: 'PATCH', token, body: { registrationOpen: false } });
+  const prepared = await f.request('/api/admin/draw/preview', { method: 'POST', token, body: {} });
+  const before = f.DB.prepare('SELECT * FROM settings').first();
+  const preview = f.DB.prepare('SELECT * FROM draw_preview').first();
+  const mailCount = f.DB.prepare('SELECT COUNT(*) AS count FROM outbox').first().count;
+  for (const heroMedia of ['channel26', 'channel26', 'animation', 'channel26']) {
+    assert.equal((await f.request('/api/admin/display', { method: 'PATCH', token, body: { heroMedia } })).status, 200);
+    assert.equal((await f.request('/api/config')).body.heroMedia, heroMedia);
+    assert.equal((await f.request('/api/admin/entries', { token })).body.settings.heroMedia, heroMedia);
+    assert.deepEqual({ ...f.DB.prepare('SELECT * FROM settings').first(), hero_media: before.hero_media }, { ...before });
+    assert.deepEqual(f.DB.prepare('SELECT * FROM draw_preview').first(), preview);
+    assert.equal(f.DB.prepare('SELECT COUNT(*) AS count FROM outbox').first().count, mailCount);
+  }
+  assert.equal((await f.request('/api/admin/settings', { method: 'PATCH', token, body: { registrationOpen: true } })).status, 409);
+  assert.equal((await f.request('/api/admin/draw/commit', { method: 'POST', token, body: { previewId: prepared.body.previewId } })).status, 200);
+  assert.equal((await f.request('/api/admin/draw/publish', { method: 'POST', token, body: {} })).status, 200);
+  assert.equal((await f.request('/api/admin/display', { method: 'PATCH', token, body: { heroMedia: 'animation' } })).status, 200);
+  assert.equal(f.DB.prepare('SELECT COUNT(*) AS count FROM audit WHERE action=?').bind('display_updated').first().count, 5);
+});
 
 test('config defaults to free/open and reveals no private entries or credentials', async t => {
   const f = fixture(); t.after(f.close);
@@ -48,9 +105,10 @@ test('email ownership, normalized deduplication, safe group edit and one-time ve
   assert.equal(verified.status, 200);
   assert.equal(verified.body.entry.verified, true);
   assert.equal((await f.request('/api/entries/verify', { method: 'POST', body: { token: originalLink } })).status, 401);
-  const updated = await f.request('/api/entries', { method: 'PATCH', token: verified.body.accessToken, body: { name: 'Owner', groupSize: 6, consent: true } });
+  const updated = await f.request('/api/entries', { method: 'PATCH', token: verified.body.accessToken, body: { ...entry, name: 'Owner', groupSize: 6 } });
   assert.equal(updated.body.entry.groupSize, 6);
   assert.equal((await f.request('/api/admin/entries', { token: verified.body.accessToken })).status, 401);
+  assert.equal((await f.request('/api/admin/display', { method: 'PATCH', token: verified.body.accessToken, body: { heroMedia: 'channel26' } })).status, 401);
   f.advance(86_400_001);
   assert.equal((await f.request('/api/entries/status', { token: verified.body.accessToken })).status, 401);
 });

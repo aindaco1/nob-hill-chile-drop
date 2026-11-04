@@ -31,10 +31,12 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Visual system, responsive layout, animation CSS | [`assets/css/main.scss`](../assets/css/main.scss) |
 | Countdown, animation lifecycle, cursor, video | [`assets/js/main.js`](../assets/js/main.js) |
 | Public registration | [`assets/js/entry.js`](../assets/js/entry.js) |
+| Homepage media and public config refresh | [`assets/js/hero-media.js`](../assets/js/hero-media.js), [`assets/js/entry.js`](../assets/js/entry.js) |
+| Recording-consent copy and reusable checkbox | [`_data/event.yml`](../_data/event.yml), [`_includes/media-consent.html`](../_includes/media-consent.html) |
 | Private entry page | [`entry.html`](../entry.html), [`assets/js/manage-entry.js`](../assets/js/manage-entry.js) |
 | Organizer UI | [`admin.html`](../admin.html), [`assets/js/admin.js`](../assets/js/admin.js) |
 | Browser API wrapper, token handling, status helpers | [`assets/js/api.js`](../assets/js/api.js) |
-| Public rules and privacy notice | [`drawing-rules.html`](../drawing-rules.html), [`privacy.html`](../privacy.html) |
+| Public rules and privacy notice | [`drawing-rules.html`](../drawing-rules.html), [`hot-spot-rules.html`](../hot-spot-rules.html), [`privacy.html`](../privacy.html) |
 | Canonical illustration | [`assets/art/chile-sign.svg`](../assets/art/chile-sign.svg) |
 | Asset/font/calendar generation | [`scripts/prepare-assets.mjs`](../scripts/prepare-assets.mjs) |
 | Social image generation | [`scripts/render-social.mjs`](../scripts/render-social.mjs) |
@@ -42,7 +44,7 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Request handling, auth and state transitions | [`api/src/worker.js`](../api/src/worker.js) |
 | Random order and capacity calculation | [`api/src/drawing.js`](../api/src/drawing.js) |
 | Outbox encryption, dispatch, mail copy, reports | [`api/src/mail.js`](../api/src/mail.js) |
-| Database schema | [`api/migrations/0001_drawing.sql`](../api/migrations/0001_drawing.sql) |
+| Database schema | [`api/migrations/0001_drawing.sql`](../api/migrations/0001_drawing.sql), [`0002_media_consent_and_display.sql`](../api/migrations/0002_media_consent_and_display.sql) |
 | Worker infrastructure | [`api/wrangler.toml`](../api/wrangler.toml) |
 | CI and Pages release | [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) |
 
@@ -69,8 +71,8 @@ The schema supports **one event and one drawing**. SQL timestamps are epoch mill
 
 | Table | Purpose and invariants |
 | --- | --- |
-| `settings` | Singleton `id=1`; registration flag, capacity 1–2000 and revision |
-| `entries` | UUID, unique normalized email, name, group size, consent version, creation/update/verification/deletion timestamps |
+| `settings` | Singleton `id=1`; registration flag, capacity 1–2000, revision and `hero_media` (`animation` or `channel26`). Display updates do not advance the drawing revision. |
+| `entries` | UUID, unique normalized email, name, group size, rules consent version, nullable media-consent version/time, creation/update/verification/deletion timestamps. Existing rows keep null media consent until an authenticated owner explicitly agrees during an edit. |
 | `tokens` | SHA-256 hashes of link/session tokens, type, subject, expiration and single-use consumption state |
 | `rate_limits` | Hashed identity/time buckets and counts; no raw IP/email key |
 | `draw_preview` | Singleton immutable UUID, capacity, captured revision and ranked results JSON |
@@ -91,10 +93,10 @@ Allowed origins are exact origins, not URL prefixes. Private GETs also require a
 
 Entry names/status text are rendered with `textContent`; CSV cells neutralize leading spreadsheet formulas. The API bounds JSON bodies and returns private/no-store responses with noindex and no-referrer headers. Mail payloads use AES-GCM with the job ID authenticated as associated data. Encryption protects queued payloads, not every database column: entry names/emails are available to authorized administration.
 
-No payment/card information is collected. Fonts/art are self-hosted; the video player is click-to-load; there are no advertising or analytics cookies. GitHub, Cloudflare and Resend still process data needed to provide hosting/API/email services. The public [privacy notice](../privacy.html) must stay aligned with implementation.
+No payment/card information is collected. Fonts/art are self-hosted; the optional YouTube video is click-to-load. When organizers choose Channel 26, the homepage loads its third-party iframe immediately, without requesting autoplay. The iframe URL is fixed in event YAML, not accepted from admin API input. The site installs no advertising or analytics cookies; the streaming provider handles its own player requests. GitHub, Cloudflare and Resend process data needed to provide hosting/API/email services. The public [privacy notice](../privacy.html) must stay aligned with implementation.
 
 ## Test boundaries
 
-[`api/test/helpers.js`](../api/test/helpers.js) creates an in-memory SQLite database from the migration and injects a fake clock/mail transport into `createWorker`. It emulates the D1 methods used here; it is not a remote D1 environment. Browser tests intercept API calls, so their success does not establish production persistence, email delivery or organizer authentication.
+[`api/test/helpers.js`](../api/test/helpers.js) creates an in-memory SQLite database from all numbered migrations in filename order and injects a fake clock/mail transport into `createWorker`. It emulates the D1 methods used here; it is not a remote D1 environment. Browser tests intercept API calls, so their success does not establish production persistence, email delivery or organizer authentication.
 
 Use [Development](DEVELOPMENT.md) for commands and [Operations](OPERATIONS.md) to distinguish local, CI and production verification.

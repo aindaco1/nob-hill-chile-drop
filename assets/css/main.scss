@@ -105,3 +105,18 @@ h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
 @media(prefers-reduced-motion:reduce){.motion-toggle{display:none!important}}
 
 @media(forced-colors:active){.hero__year{-webkit-text-stroke:0;color:CanvasText}}
+
+.hero__stream{min-width:0;width:100%}
+.hero__stream>.eyebrow{color:var(--lime);margin-bottom:.5rem}
+.hero__player{position:relative;width:100%;aspect-ratio:3/2;background:#000;border:1px solid var(--line)}
+.hero__player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.hero__stream>.text-link{font-size:.9375rem;margin-top:.5rem;gap:.5rem}
+.legal li+li{margin-top:.75rem}
+.legal{overflow-wrap:anywhere}
+@media(max-width:760px){
+  .hero--stream h1{grid-column:1/-1;text-align:center;font-size:clamp(2.85rem,8vw,3.5rem)}
+  .hero--stream .hero__stream{grid-column:1/-1;grid-row:3}
+  .hero--stream .hero__intro{grid-row:4}
+  .hero--stream .hero__actions{grid-row:5}
+  .hero--stream .hero__details{grid-row:6}
+}
