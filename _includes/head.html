@@ -6,8 +6,8 @@
   <meta name="description" content="{{ site.description | escape }}">
   <meta name="theme-color" content="#101921">
   <meta name="color-scheme" content="dark light">
-  {% if site.preview or page.form_script contains "admin" or page.form_script contains "manage-entry" %}<meta name="robots" content="noindex,follow">{% endif %}
-  <meta name="referrer" content="strict-origin-when-cross-origin">
+  {% if site.preview or page.private_page or page.form_script contains "admin" or page.form_script contains "manage-entry" %}<meta name="robots" content="noindex,follow">{% endif %}
+  <meta name="referrer" content="{% if page.private_page or page.form_script %}no-referrer{% else %}strict-origin-when-cross-origin{% endif %}">
   <link rel="canonical" href="{{ canonical }}">
   <link rel="icon" href="{{ '/assets/art/favicon.svg' | relative_url }}" type="image/svg+xml">
   <meta property="og:type" content="website">

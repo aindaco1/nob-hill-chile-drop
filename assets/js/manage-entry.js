@@ -11,6 +11,7 @@ function render(entry) {
   const labels = { entered: 'Your email is confirmed. Your group is entered in the free drawing.', pending_verification: 'Your email needs confirmation.', selected: 'Your whole group has been selected for Hot Spot admission. Check your email for event instructions.', waitlisted: 'Your group is on the waitlist. You can still watch the drop from public vantage points.' };
   result.textContent = `${labels[entry.status] || 'Your group entry is recorded.'} Group size: ${entry.groupSize}.`;
   result.hidden = false; linkForm.hidden = true; signout.hidden = false;
+  if (['selected', 'waitlisted'].includes(entry.status)) loadPass();
   const compatible = entry.requiredMediaConsentVersion === editForm.elements.mediaConsent.value && entry.requiredEntryFormVersion === editForm.dataset.formVersion && entry.maxGroupSize === Number(editForm.elements.groupSize.dataset.maxGroupSize);
   editForm.hidden = !entry.canEdit || !compatible;
   if (entry.canEdit && !compatible) result.textContent += ' Group editing is temporarily unavailable while the entry form is updated. Please refresh in a moment.';
@@ -19,6 +20,18 @@ function render(entry) {
   editForm.elements.city.value = entry.city ?? '';
   editForm.elements.stateProvince.value = entry.stateProvince ?? '';
   editForm.elements.country.value = entry.country ?? 'USA';
+}
+async function loadPass() {
+  const card = document.querySelector('[data-owner-pass]');
+  try {
+    const { pass } = await request('/api/entries/pass', {}, session);
+    if (!pass) return;
+    card.hidden = false;
+    document.querySelector('[data-owner-pass-image]').src = pass.qrDataUrl;
+    document.querySelector('[data-owner-pass-link]').href = pass.url;
+    document.querySelector('[data-owner-pass-title]').textContent = pass.checkedInAt ? 'Group already checked in' : pass.status === 'selected' ? 'Your Hot Spot admission QR' : 'Your Hot Spot waitlist QR';
+    document.querySelector('[data-owner-pass-note]').textContent = 'Show your QR to a volunteer when your whole group is together. ' + (pass.status === 'waitlisted' ? 'Waitlist admission is subject to available space after the reservation cutoff. ' : '') + (pass.selectedCutoffLabel ? `Unused selected reservations are released on ${pass.selectedCutoffLabel}.` : 'The reservation cutoff has not been set yet.');
+  } catch(error) { status(feedback, 'Your result is saved, but the QR could not load. Refresh to try again.', 'error'); }
 }
 async function load() {
   try { render((await request('/api/entries/status', {}, session)).entry); }

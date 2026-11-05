@@ -20,5 +20,5 @@ migrations_dir = "migrations"
 [triggers]
 crons = ["* * * * *", "0 16 * * MON"]
 
-# Secrets: RESEND_API_KEY, OUTBOX_ENCRYPTION_KEY (32-byte base64url key).
+# Secrets: RESEND_API_KEY, OUTBOX_ENCRYPTION_KEY, TICKET_SIGNING_KEY (independent 32-byte base64url keys).
 # Keep credentials out of this file and the GitHub Pages build.

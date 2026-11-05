@@ -1,0 +1,22 @@
+<section class="dashboard-panel" data-door-admin>
+  <h2>Door check-in</h2>
+  <p>The counter records initial admissions, including waitlisted groups admitted at the door. Staff assess actual space separately; departures and wristband re-entry do not change this total.</p>
+  <div class="dashboard-stats" data-admission-counts></div>
+  <p class="form-status" data-door-admin-status role="status" tabindex="-1"></p>
+  <form class="form-stack" data-door-settings>
+    <label class="consent"><input type="checkbox" name="admissionOpen"><span>Open volunteer check-in (after results are published)</span></label>
+    <label class="field" for="selected-cutoff">Release unused selected reservations at<input id="selected-cutoff" name="selectedCutoff" type="datetime-local"><small>Mountain Time (Albuquerque). Leave blank until decided; waitlist check-in stays closed until a cutoff is set and reached.</small></label>
+    <p class="small">After the cutoff, unused selected reservations are released and all new admissions depend on available space. The guest pass shows the current cutoff; changing it does not send an update email.</p>
+    <button type="submit" class="button button--lime">Save door settings</button>
+  </form>
+  <div class="dashboard-toolbar"><a class="button button--outline" href="{{ '/check-in/' | relative_url }}">Open volunteer scanner ↗</a><button class="button button--outline" data-refresh-door>Refresh admission count</button></div>
+  <h3>Volunteer access</h3>
+  <p class="small">Approved volunteers can verify group details and check groups in. They cannot run the drawing, export entries, change settings or manage volunteers. Adding an email does not send a message; volunteers request their own sign-in link.</p>
+  <form class="form-stack" data-volunteer-access>
+    <label class="field" for="volunteer-email">Volunteer email<input id="volunteer-email" type="email" name="email" autocomplete="off" required maxlength="254"></label>
+    <button type="submit" class="button button--lime">Add volunteer</button>
+  </form>
+  <ul class="volunteer-list" data-volunteers></ul>
+  <h3>Recent group admissions</h3>
+  <div class="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>People</th><th>Admitted</th><th>Volunteer</th></tr></thead><tbody data-admissions></tbody></table></div>
+</section>

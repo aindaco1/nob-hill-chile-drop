@@ -186,3 +186,25 @@ h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
 .entry-card .field input,.entry-card .field select{min-height:48px;padding:.5rem .75rem;line-height:1.4}
 .entry-card .consent{line-height:1.5}
 .entry-card>.text-link{margin-top:.5rem}
+
+// Group passes and the restricted volunteer door surface.
+.door-page,.pass-page{max-width:960px}
+.door-page h1,.pass-page h1{font-size:clamp(2.75rem,8vw,5rem)}
+.door-ticket{border:2px solid var(--lime,#d7ef8e);padding:clamp(1rem,4vw,2rem);margin:2rem 0;border-radius:8px;background:#192a34}
+.door-ticket[data-state=waitlisted]{border-color:#f5c86a}
+.door-ticket[data-state=used]{border-color:#a4b7c4}
+.door-ticket h2{font-size:clamp(1.75rem,6vw,3rem);margin:.5rem 0 1.25rem}
+.ticket-details{display:grid;gap:1rem;margin:1.25rem 0}
+.ticket-details dt{font-size:.875rem;color:#c4d2d8}
+.ticket-details dd{margin:.2rem 0 0;font-weight:600;overflow-wrap:anywhere}
+.door-page video{width:100%;max-width:520px;aspect-ratio:4/3;object-fit:cover;border:2px solid #d7ef8e;border-radius:8px;background:#000}
+.door-page .form-stack{max-width:100%}
+.door-page input,.door-page button,.door-page .button{min-height:48px}
+.group-pass{max-width:560px;border:1px solid #526775;background:#192a34;padding:clamp(1rem,4vw,2rem);margin:2rem 0;border-radius:10px;overflow-wrap:anywhere}
+.group-pass img{display:block;max-width:100%;width:320px;height:auto;background:white;border-radius:4px;margin:1.5rem 0;image-rendering:pixelated}
+.group-pass h2{font-size:clamp(1.75rem,5vw,2.5rem)}
+.volunteer-list{list-style:none;padding:0}
+.volunteer-list li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;align-items:center;margin:1rem 0}
+.volunteer-list span,[data-door-identity]{overflow-wrap:anywhere;min-width:0}
+[data-door-admin] input[type=datetime-local]{max-width:100%;min-width:0}
+@media print{.pass-page~*,.site-header,.site-footer,.skip-link{display:none}.group-pass{break-inside:avoid}}

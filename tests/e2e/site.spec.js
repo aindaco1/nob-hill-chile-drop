@@ -195,7 +195,8 @@ test('chile loops automatically, can be paused, and respects reduced motion',asy
   await chile.evaluate(el=>new Promise(resolve=>el.addEventListener('animationiteration',()=>resolve(true),{once:true})));
   await page.getByRole('button',{name:'Pause animation',exact:true}).click();
   await expect.poll(()=>chile.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
-  const pausedAt=await chile.evaluate(el=>el.getAnimations()[0].currentTime);
+  // CSS playState changes before the compositor finishes the pending pause.
+  const pausedAt=await chile.evaluate(async el=>{const animation=el.getAnimations()[0];await animation.ready;return animation.currentTime;});
   await page.locator('footer').scrollIntoViewIfNeeded();await chile.scrollIntoViewIfNeeded();
   expect(await chile.evaluate(el=>el.getAnimations()[0].currentTime)).toBe(pausedAt);
   await page.getByRole('button',{name:'Resume animation',exact:true}).click();

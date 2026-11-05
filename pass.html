@@ -1,0 +1,21 @@
+---
+layout: default
+title: Your group QR
+permalink: /pass/
+form_script: /assets/js/pass.js
+private_page: true
+---
+<section class="section wrap dashboard pass-page">
+  <p class="eyebrow">Nob Hill Chile Drop · December 31</p><h1>Your group QR.</h1>
+  <p class="form-status" data-pass-status role="status"></p>
+  <section data-pass-card class="group-pass" hidden aria-labelledby="pass-heading">
+    <h2 id="pass-heading" data-pass-heading></h2><p data-pass-group></p>
+    <img data-pass-image alt="Your group QR code; show it to a volunteer at the Hot Spot" width="320" height="320">
+    <p data-pass-instructions></p><p data-pass-cutoff></p>
+    <a class="button button--lime" data-pass-save download="chile-drop-group-qr.gif">Save QR image ↓</a>
+    <p class="small">Keep this code private. Your whole group must arrive together. After admission, use wristbands for re-entry, subject to available space.</p>
+  </section>
+  <p>Hot Spot opens at 10 p.m. Mountain Time at Hotel Zazz. The chile drops at midnight.</p>
+  <a class="text-link" href="{{ '/entry/' | relative_url }}">Manage your group ↗</a>
+  <noscript><p>Use the QR image in your email, or enable JavaScript to open your group pass.</p></noscript>
+</section>

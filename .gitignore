@@ -60,3 +60,7 @@ assets/js/api-client.js
 event.ics
 work/
 api/.wrangler/
+
+assets/js/qr-code.js
+assets/js/qr-reader.js
+assets/vendor-licenses/

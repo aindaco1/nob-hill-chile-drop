@@ -66,4 +66,10 @@ faq:
   - question: How does the free drawing work?
     answer: Enter your group and confirm your email. Each verified group gets one place in a random order, regardless of group size. We select whole groups in that order, up to 2,000 people. When the next group won't fit, selection stops and the remaining groups stay on the waitlist. There's one group entry per email address, and no charge for entry or selected admission.
   - question: When will I hear about the drawing?
-    answer: We haven't set a drawing date yet. Once entries close and the results are reviewed, we'll email selected groups. You can also check your result using the private link in your entry email.
+    answer: We haven't set a drawing date yet. Once entries close and the results are reviewed, we'll email every verified group its result and a group QR. Selected groups receive an admission QR; other groups receive a waitlist QR. You can also check your result through your private entry page.
+
+admission:
+  group_rule: Show your group QR to a volunteer when your whole party is present. Everyone in the group must check in together. A QR scan alone does not record admission.
+  waitlist_rule: Waitlisted groups are welcome to attend and watch from public vantage points. Show your waitlist QR at the Hot Spot; it does not guarantee admission. After the selected-group reservation cutoff, volunteers may admit waitlisted groups at the door when there is space for the whole group.
+  cutoff_rule: Unused selected-group reservations are released at the organizer-set cutoff. Check your group pass for the current cutoff before arriving. After the cutoff, admission depends on available space.
+  wristband_rule: After check-in, use your wristbands for re-entry, subject to available space. Staff manage available capacity at the door; the online admission count does not track departures or re-entry.

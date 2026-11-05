@@ -36,6 +36,7 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Homepage media and public config refresh | [`assets/js/hero-media.js`](../assets/js/hero-media.js), [`assets/js/entry.js`](../assets/js/entry.js) |
 | Recording-consent copy and reusable checkbox | [`_data/event.yml`](../_data/event.yml), [`_includes/media-consent.html`](../_includes/media-consent.html) |
 | Private entry page | [`entry.html`](../entry.html), [`assets/js/manage-entry.js`](../assets/js/manage-entry.js) |
+| Group passes and volunteer door | [`api/src/tickets.js`](../api/src/tickets.js), [`api/src/door.js`](../api/src/door.js), [`pass.html`](../pass.html), [`check-in.html`](../check-in.html), `assets/js/pass.js`, `check-in.js`, `admin-door.js`; [behavior and API](CHECK_IN.md) |
 | Organizer UI | [`admin.html`](../admin.html), [`assets/js/admin.js`](../assets/js/admin.js) |
 | Browser API wrapper, token handling, status helpers | [`assets/js/api.js`](../assets/js/api.js) |
 | Public rules and privacy notice | [`drawing-rules.html`](../drawing-rules.html), [`hot-spot-rules.html`](../hot-spot-rules.html), [`privacy.html`](../privacy.html) |
@@ -81,9 +82,11 @@ The schema supports **one event and one drawing**. SQL timestamps are epoch mill
 | `drawing` | Singleton committed preview reference and optional publication time |
 | `results` | One rank/status per entry; foreign key to entries |
 | `outbox` | Deduplicated mail jobs, encrypted payload or deferred winner ID, attempts, leases, provider receipt and bounded error evidence |
+| `door_settings`, `door_staff`, `door_tokens` | Separate check-in gate/cutoff/revision, approved volunteer access and revocable staff links/sessions; additive migration 0004 |
+| `admissions` | One atomic initial-admission record per whole group; actor, timestamp, group size, request ID and admission classification |
 | `audit` | Admin action requests, actor and limited identifiers/settings; not a copy of entry records |
 
-Entry insert/delete and changes to size/verification advance the settings revision. Preparation records it, and commit checks it. Related writes use D1 batches so token creation/mail enqueue and result publication/winner enqueue stay together. Audit actions ending in `_requested` describe requests; inspect the resulting state before treating them as completed transitions.
+Entry insert/delete and changes to size/verification advance the settings revision. Preparation records it, and commit checks it. Related writes use D1 batches so token creation/mail enqueue and result publication/results enqueue stay together. Audit actions ending in `_requested` describe requests; inspect the resulting state before treating them as completed transitions.
 
 See [Drawing](DRAWING.md) for post-preparation erasure: rank/size remain while personal details are anonymized. No automatic global retention purge exists.
 
@@ -94,6 +97,8 @@ Links carry random tokens in URL fragments (`#token=…`). Browser code removes 
 Allowed origins are exact origins, not URL prefixes. Private GETs also require an allowed `Origin` header. Bearer auth and the admin allowlist protect private records; CORS alone does not. All projects on `https://aindaco1.github.io` share an origin, so the project path is not a security boundary.
 
 Entry names/status text are rendered with `textContent`; CSV cells neutralize leading spreadsheet formulas. The API bounds JSON bodies and returns private/no-store responses with noindex and no-referrer headers. Mail payloads use AES-GCM with the job ID authenticated as associated data. Encryption protects queued payloads, not every database column: entry names/emails are available to authorized administration.
+
+Group QR credentials are separately HMAC-signed using `TICKET_SIGNING_KEY`; they never authorize attendance writes or expose contact details publicly. Approved staff must explicitly check a group in. QR rendering and camera decoding run locally without a third-party QR service; see [Check-in](CHECK_IN.md).
 
 No payment/card information is collected. Fonts/art are self-hosted; the optional YouTube video is click-to-load. When organizers choose Channel 26, the homepage loads its third-party iframe immediately, without requesting autoplay. The iframe URL is fixed in event YAML, not accepted from admin API input. The site installs no advertising or analytics cookies; the streaming provider handles its own player requests. GitHub, Cloudflare and Resend process data needed to provide hosting/API/email services. The public [privacy notice](../privacy.html) must stay aligned with implementation.
 

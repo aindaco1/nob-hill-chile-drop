@@ -28,6 +28,7 @@ Resource IDs and URLs are identifiers, not secrets. Recheck the live account/bin
 | Worker `REPORT_EMAIL` | Weekly report destination and reply-to; currently the same organizer |
 | Worker `EMAIL_FROM` | Verified sender identity |
 | Secret `RESEND_API_KEY` | Provider credential; never in Git/Pages |
+| Secret `TICKET_SIGNING_KEY` | Independent 32 random bytes as unpadded base64url; signs event/group QR credentials. Preserve it after passes are issued. |
 | Secret `OUTBOX_ENCRYPTION_KEY` | 32 random bytes as unpadded base64url (43 characters); encrypts queued private payloads |
 
 Secrets are installed in Cloudflare. Retrieve/manage them only through the organizer's approved private credential workflow. Do not print them, copy them into a public issue, or publish a backup in this repository. Ignored local files are not a substitute for secure storage. Do not rotate the outbox key while encrypted jobs require it; rotation needs a migration/recovery plan. The key also salts rate-limit hashes.
@@ -101,11 +102,22 @@ Release and verify Pages, then promptly deploy the Worker. New forms wait for ma
 
 Keep the additive columns on rollback. A rollback of only the Worker hides the new forms; a rollback of both Worker and Pages restores the old permissive entry contract. Prefer a forward fix retaining the required location and eight-person limit. Never restore stale data or backfill unprovided location to make old code appear compatible.
 
+## Group QR and volunteer check-in release
+
+1. Run the full tests and Worker check. Read [Check-in](CHECK_IN.md). Review additive migration `0004_group_admission.sql`: it creates only new tables, with check-in closed, cutoff unset, no volunteers and no admissions. Test legacy preservation and apply all migrations to isolated local D1.
+2. Refresh live health/config, bindings, traffic and schedules. Confirm whether results have already been published: this release does not backfill or resend historical results. Any such recovery requires organizer direction. Create a fresh protected D1 export outside the repo and restore it to isolated SQLite to verify integrity before migrating.
+3. Provision the independent `TICKET_SIGNING_KEY` secret with 32 cryptographically random bytes, base64url encoded without padding (43 characters), through the approved credential workflow. Never print or commit it. Keep a protected recovery copy. This does not replace or rotate `OUTBOX_ENCRYPTION_KEY`. Preserve this signing key for the lifetime of issued passes.
+4. Apply migration 0004 to the existing D1. Verify prior tables/config are unchanged and new tables are empty with defaults. Deploy the new Worker and confirm `health.ticketsConfigured` and `health.emailConfigured`; verify live traffic, bindings and cron. Do not open check-in, set a real cutoff, grant volunteers, publish results or send email as part of deployment.
+5. Release Pages at the exact tested commit and verify its workflow and changed public artifacts. Inspect `/check-in/` and `/pass/` on desktop/phones without signing in or creating a production entry. Check that anonymous access cannot read guest details or change attendance using read-only unauthorized probes; use isolated fixtures for writes.
+6. After release, organizers configure volunteer emails and the cutoff and explicitly open check-in at the appropriate time. Actual email delivery and physical-phone camera/re-entry/capacity procedures require a separate authorized rehearsal.
+
+Rollback retains the additive tables and signing key. Before any new results jobs or admissions exist, an old Worker remains compatible with the unchanged existing tables. Once `waitlist` jobs, issued QR codes or admissions exist, rolling back to an old Worker can fail to materialize new jobs and disables ticket/door routes; prefer a forward fix or keep the door closed while resolving. Never reset the drawing, delete admissions, rotate the signing key, or restore a stale database to make old code appear compatible. Existing frozen/attempted mail payloads must remain unchanged.
+
 ## Email queue and recovery
 
-Implementation: [`api/src/mail.js`](../api/src/mail.js). Creation of verification/login tokens and their encrypted mail jobs is batched. Entry/login requests schedule a prompt background send attempt; winner publication only queues IDs, with delivery performed by cron. Winner jobs freeze their encrypted payload before the first provider request and reuse it on retries.
+Implementation: [`api/src/mail.js`](../api/src/mail.js). Creation of verification/login tokens and their encrypted mail jobs is batched. Entry/login requests schedule a prompt background send attempt; result publication only queues IDs, with delivery performed by cron. Results jobs freeze their encrypted payload before the first provider request and reuse it on retries.
 
-Jobs use stable IDs as Resend idempotency keys, including `winner:<preview UUID>:<entry UUID>`. A database lease prevents concurrent dispatchers from taking the same job. Dispatch runs every minute, handles at most 10 jobs per invocation within a 20-second budget, and prioritizes admin/entry links before reports and winners. A large winner batch may take hours to drain; publication is not immediate bulk delivery.
+Jobs use stable IDs as Resend idempotency keys, including `winner:<preview UUID>:<entry UUID>` and `waitlist:<preview UUID>:<entry UUID>`. A database lease prevents concurrent dispatchers from taking the same job. Dispatch runs every minute, handles at most 10 jobs per invocation within a 20-second budget, and prioritizes admin/volunteer/entry links before reports and results. A large winner batch may take hours to drain; publication is not immediate bulk delivery.
 
 Review current provider quotas and Worker execution limits before a large publication. The 2,000-winner test uses local SQLite and stub email; it does not establish production throughput or delivery capacity. No paid-plan upgrade is assumed by the implementation.
 

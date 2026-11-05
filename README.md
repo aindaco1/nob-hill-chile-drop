@@ -32,6 +32,7 @@ Inspect its Git status before editing. A chat's scratch directory or a validatio
 | [Development](docs/DEVELOPMENT.md) | Setup, safe local testing, content changes and troubleshooting |
 | [Architecture](docs/ARCHITECTURE.md) | File map, Platform reuse, data flow, database and security boundaries |
 | [Drawing](docs/DRAWING.md) | Guest lifecycle, selection rules, organizer steps and privacy requests |
+| [Check-in](docs/CHECK_IN.md) | Group QR emails, volunteer access, cutoff, initial-admission counter and door procedure |
 | [API](docs/API.md) | Routes, authentication, payloads, errors and rate limits |
 | [Operations](docs/OPERATIONS.md) | Deployments, configuration, email recovery, rollback and launch checks |
 

@@ -34,7 +34,7 @@ export function fixture() {
   const env = {
     DB, ALLOWED_ORIGINS: 'https://aindaco1.github.io', PUBLIC_SITE_URL: 'https://aindaco1.github.io/nob-hill-chile-drop',
     ADMIN_EMAILS: 'alonso@dustwave.xyz', REPORT_EMAIL: 'alonso@dustwave.xyz', EMAIL_FROM: 'Chile Drop <hello@example.test>',
-    RESEND_API_KEY: 'test-only-no-network', OUTBOX_ENCRYPTION_KEY: 'j86WBIp6sDlQ2NpGa6VH4fh6HUaq3XVccN4moM3TLYA'
+    RESEND_API_KEY: 'test-only-no-network', TICKET_SIGNING_KEY: 'JxZup8cL7YLs41tN8mJknhYVZXW1Fe8DJBRG0XhQxGs', OUTBOX_ENCRYPTION_KEY: 'j86WBIp6sDlQ2NpGa6VH4fh6HUaq3XVccN4moM3TLYA'
   };
   const fetchTarget = async (url, init) => {
     if (url !== 'https://api.resend.com/emails') throw new Error('Unexpected network URL');

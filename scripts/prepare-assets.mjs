@@ -1,3 +1,4 @@
+import { build } from 'esbuild';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { parse } from 'yaml';
 
@@ -12,10 +13,15 @@ for (const family of ['barlow-condensed', 'dm-sans']) {
 }
 await copyFile('shared/dust-wave-platform/packages/site-shell/src/header-nav-browser.js', 'assets/js/header-nav.js');
 await copyFile('shared/dust-wave-platform/packages/admin-shell/src/api-client.js', 'assets/js/api-client.js');
+await copyFile('node_modules/qrcode-generator/dist/qrcode.mjs', 'assets/js/qr-code.js');
+await build({ entryPoints: ['node_modules/jsqr/dist/jsQR.js'], bundle: true, format: 'esm', minify: true, outfile: 'assets/js/qr-reader.js' });
+await mkdir('assets/vendor-licenses', { recursive: true });
+await copyFile('licenses/qrcode-generator.txt', 'assets/vendor-licenses/qrcode-generator.txt');
+await copyFile('node_modules/jsqr/LICENSE', 'assets/vendor-licenses/jsqr.txt');
 const event = parse(await readFile('_data/event.yml', 'utf8'));
 const timestamp = date => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 const start = new Date(event.drop_at);
 const escape = s => s.replaceAll('\\', '\\\\').replaceAll('\n', '\\n').replaceAll(',', '\\,').replaceAll(';', '\\;');
 // The calendar marks only the drop, not an invented arrival time.
-const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nob Hill Chile Drop//Event//EN', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', 'UID:nob-hill-chile-drop-2027@dustwave.xyz', 'DTSTAMP:20261028T000000Z', `DTSTART:${timestamp(start)}`, `DTEND:${timestamp(new Date(start.getTime() + 60000))}`, `SUMMARY:${escape(event.name + ' — midnight drop')}`, `LOCATION:${escape(event.venue + ', ' + event.location)}`, `DESCRIPTION:${escape(`The chile drops at midnight Mountain Time. The Hot Spot opens at ${event.access.opens_label}; alcohol sales stop at ${event.access.alcohol_ends_label} Mountain Time. Hot Spot admission requires selection in the free drawing.`)}`, 'URL:https://aindaco1.github.io/nob-hill-chile-drop/', 'END:VEVENT', 'END:VCALENDAR'];
+const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nob Hill Chile Drop//Event//EN', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', 'UID:nob-hill-chile-drop-2027@dustwave.xyz', 'DTSTAMP:20261028T000000Z', `DTSTART:${timestamp(start)}`, `DTEND:${timestamp(new Date(start.getTime() + 60000))}`, `SUMMARY:${escape(event.name + ' — midnight drop')}`, `LOCATION:${escape(event.venue + ', ' + event.location)}`, `DESCRIPTION:${escape(`The chile drops at midnight Mountain Time. The Hot Spot opens at ${event.access.opens_label}; alcohol sales stop at ${event.access.alcohol_ends_label} Mountain Time. Hot Spot admission requires a selected group QR or volunteer-approved waitlist admission after the reservation cutoff. Whole groups check in together.`)}`, 'URL:https://aindaco1.github.io/nob-hill-chile-drop/', 'END:VEVENT', 'END:VCALENDAR'];
 await writeFile('event.ics', lines.map(line => line.match(/.{1,70}/gu).join('\r\n ')).join('\r\n') + '\r\n');

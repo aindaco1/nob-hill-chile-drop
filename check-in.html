@@ -1,0 +1,38 @@
+---
+layout: default
+title: Volunteer check-in
+permalink: /check-in/
+form_script: /assets/js/check-in.js
+private_page: true
+---
+<section class="section wrap dashboard door-page">
+  <p class="eyebrow">Volunteer access</p><h1>Hot Spot<br>check-in.</h1>
+  <p class="form-status" data-door-status role="status" tabindex="-1"></p>
+  <form data-door-login class="form-stack">
+    <p>Volunteers: sign in with your organizer-approved email. Guests: show your group QR to a volunteer. Opening it here does not check you in.</p>
+    <label class="field" for="door-email">Volunteer email<input id="door-email" name="email" type="email" autocomplete="email" required maxlength="254"></label>
+    <button type="submit" class="button button--lime">Email my sign-in link ↗</button>
+  </form>
+  <div data-door-workspace hidden>
+    <div class="dashboard-toolbar"><p data-door-identity class="small"></p><button class="button button--outline" data-door-signout>Sign out</button></div>
+    <p class="entry-result" data-door-gate></p>
+    <div class="dashboard-toolbar"><button class="button button--lime" data-camera-start>Scan a group QR</button><button class="button button--outline" data-camera-stop hidden>Stop camera</button></div>
+    <video data-camera muted playsinline hidden aria-label="Live QR scanner"></video>
+    <form class="form-stack" data-door-lookup>
+      <label class="field" for="door-code">Or paste the group QR link<input id="door-code" name="ticket" type="text" autocomplete="off" spellcheck="false" required maxlength="600"></label>
+      <button class="button button--outline" type="submit">Verify group</button>
+    </form>
+    <section class="door-ticket" data-door-ticket hidden aria-labelledby="door-ticket-heading">
+      <p class="eyebrow" data-ticket-badge></p><h2 id="door-ticket-heading" data-ticket-heading tabindex="-1"></h2>
+      <dl class="ticket-details"><div><dt>Name</dt><dd data-ticket-name></dd></div><div><dt>Email</dt><dd data-ticket-email></dd></div><div><dt>People in this group</dt><dd data-ticket-size></dd></div></dl>
+      <p data-ticket-note></p>
+      <form class="form-stack" data-door-confirm>
+        <label class="consent"><input type="checkbox" name="wholeGroupPresent" required><span>The whole group is here and will enter together.</span></label>
+        <label class="consent"><input type="checkbox" name="spaceConfirmed" required><span>I have confirmed there is room for the whole group. The admission counter is not a live occupancy count.</span></label>
+        <button class="button button--lime" type="submit" data-check-in-button>Check in group</button>
+      </form>
+    </section>
+    <p class="small muted">Issue wristbands after a successful check-in. Use wristbands for re-entry. Staff assess available space at the door. A lost connection cannot confirm a check-in; reconnect and verify the group again.</p>
+  </div>
+  <noscript><p>Enable JavaScript to sign in and verify group QR codes.</p></noscript>
+</section>

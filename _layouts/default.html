@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="{{ site.lang }}">
   {% include head.html %}
-  <body data-api-base="{{ site.api_base }}" data-chile-art="{{ '/assets/art/chile-sign.svg' | relative_url }}">
+  <body data-api-base="{{ site.api_base }}" data-site-base="{{ '/' | relative_url }}" data-chile-art="{{ '/assets/art/chile-sign.svg' | relative_url }}">
     <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="site-header{% if page.chile_backdrops %} has-chile-backdrop{% endif %}">
       {% if page.chile_backdrops %}{% include falling-chiles.html %}{% endif %}

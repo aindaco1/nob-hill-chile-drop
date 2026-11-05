@@ -1,3 +1,4 @@
+import { setupDoorAdmin } from './admin-door.js';
 import { request, status, message, takeLinkToken, withSubmit } from './api.js';
 (async () => {
 const find = selector => document.querySelector(selector);
@@ -9,6 +10,7 @@ const displayForm = find('[data-display-settings]');
 const key = 'chile-drop-admin-session';
 let session = sessionStorage.getItem(key) || '';
 let snapshot, offset = 0;
+const doorAdmin = setupDoorAdmin(() => session);
 const token = takeLinkToken();
 function signout() {sessionStorage.removeItem(key);session='';snapshot=null;dashboard.hidden=true;login.hidden=false;}
 function stat(label, value) {const box=document.createElement('div');box.className='dashboard-stat';const number=document.createElement('strong');number.textContent=value;const text=document.createElement('span');text.textContent=label;box.append(number,text);return box;}
@@ -36,7 +38,7 @@ function render(data) {
   find('[data-next]').disabled=offset+50>=data.total;
   find('[data-email-summary]').textContent=`Email outbox: ${JSON.stringify(data.outbox)}. Weekly activity reports go to the configured organizer address on Mondays.`;
 }
-async function refresh(){try{render(await request(`/api/admin/entries?limit=50&offset=${offset}`,{},session));}catch(error){if(error.status===401)signout();throw error;}}
+async function refresh(){try{render(await request(`/api/admin/entries?limit=50&offset=${offset}`,{},session));await doorAdmin.refresh();}catch(error){if(error.status===401)signout();throw error;}}
 async function action(button,run){button.disabled=true;try{await run();await refresh();}catch(error){status(feedback,message(error),'error');feedback.focus();}finally{if(snapshot)render(snapshot);else button.disabled=false;}}
 if(token){status(feedback,'Confirming organizer sign-in…');try{const data=await request('/api/admin/verify',{method:'POST',body:{token}});session=data.accessToken;sessionStorage.setItem(key,session);await refresh();status(feedback,'Signed in. No drawing or email publication happens automatically.','success');}catch(error){signout();status(feedback,message(error),'error');}}
 else if(session){try{await refresh();}catch(error){status(feedback,message(error),'error');}}

@@ -187,7 +187,7 @@ test('manual draw requires closure; preparation and commit are atomic and cannot
   assert.equal(JSON.stringify(config).includes('@'), false);
   await dispatchOutbox(f.env, f.dependencies);
   await dispatchOutbox(f.env, f.dependencies);
-  assert.equal([...f.messages.values()].filter(message => message.payload.subject.startsWith('Your group')).length, preview.selectedOrders);
+  assert.equal([...f.messages.values()].filter(message => message.payload.subject.startsWith('Your group')).length, preview.eligibleOrders);
 });
 
 test('CSV requires admin and neutralizes spreadsheet formulas', async t => {
@@ -278,7 +278,7 @@ test('erasure after preparation anonymizes without invalidating or changing the 
   assert.equal(row.state_province, null);
   assert.equal(row.country, null);
   assert.equal((await f.request('/api/admin/draw/commit', { method: 'POST', token, body: { previewId: preview.body.previewId } })).status, 200);
-  assert.equal((await f.request('/api/admin/draw/publish', { method: 'POST', token, body: {} })).body.queuedWinnerEmails, 0);
+  assert.equal((await f.request('/api/admin/draw/publish', { method: 'POST', token, body: {} })).body.queuedResultEmails, 0);
   assert.equal(f.DB.prepare('SELECT COUNT(*) AS count FROM results').first().count, 1);
 });
 
@@ -292,7 +292,7 @@ test('maximum 2,000 single-person winners publish atomically as ID-only jobs', a
   await f.request('/api/admin/draw/commit', { method: 'POST', token, body: { previewId: preview.body.previewId } });
   const published = await f.request('/api/admin/draw/publish', { method: 'POST', token, body: {} });
   assert.equal(published.status, 200);
-  assert.equal(published.body.queuedWinnerEmails, 2000);
+  assert.equal(published.body.queuedResultEmails, 2000);
   assert.equal(f.DB.prepare("SELECT COUNT(*) AS count FROM outbox WHERE kind='winner'").first().count, 2000);
   assert.equal(f.DB.prepare("SELECT COUNT(*) AS count FROM outbox WHERE kind='winner' AND payload='' AND id LIKE 'winner:%'").first().count, 2000);
   assert.equal(f.calls.length, 0);

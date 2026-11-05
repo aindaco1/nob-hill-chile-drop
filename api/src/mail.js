@@ -1,3 +1,4 @@
+import { resultEmail } from './tickets.js';
 import { base64urlEncode, randomToken } from '../../shared/dust-wave-platform/packages/worker-core/src/crypto.js';
 import { prepareResendEmail } from '../../shared/dust-wave-platform/packages/worker-core/src/email.js';
 import { createOutboxJobId, outboxRetryDelayMs } from '../../shared/dust-wave-platform/packages/worker-core/src/outbox.js';
@@ -49,17 +50,14 @@ export function mailStatement(env, job, condition = '1', bindings = []) {
     .bind(job.id, job.kind, job.recipientId, job.payload, job.now, job.now, job.expiresAt, ...bindings);
 }
 
-async function materializeWinner(env, job) {
-  const entry = job.winner_json ? JSON.parse(job.winner_json) : null;
+async function materializeResult(env, job) {
+  const entry = job.result_json ? JSON.parse(job.result_json) : null;
   if (!entry) {
     await env.DB.prepare("UPDATE outbox SET status='suppressed',payload='',lease_until=NULL,lease_token=NULL WHERE id=? AND lease_token=?")
       .bind(job.id, job.lease_token).run();
     return false;
   }
-  const payload = prepareResendEmail({
-    from: env.EMAIL_FROM, to: [entry.email], subject: 'Your group was selected — Nob Hill Chile Drop',
-    text: `Hello ${entry.name},\n\nYour group of ${entry.group_size} was selected for free Hot Spot admission at the Nob Hill Chile Drop on December 31, 2026 at Hotel Zazz, Albuquerque. The chile drops at midnight.\n\nYour whole group is selected together. Entry includes closer views of the chile and music, access to alcohol sales for eligible adults, and a chance to appear on camera. Alcohol is not included. Hotel guest areas are separate.\n\nVisit ${env.PUBLIC_SITE_URL}/entry/ and request a private link to see your result. Watch your email for arrival and check-in instructions from the organizers.\n\nNob Hill Chile Drop`
-  }, { replyTo: env.REPORT_EMAIL || 'alonso@dustwave.xyz' });
+  const payload = prepareResendEmail(await resultEmail(env, entry), { replyTo: env.REPORT_EMAIL || 'alonso@dustwave.xyz' });
   const frozen = await encodePayload(env, payload, job.id);
   const result = await env.DB.prepare(`UPDATE outbox SET payload=? WHERE id=? AND lease_token=? AND status='sending' AND payload=''
     AND EXISTS(SELECT 1 FROM entries WHERE id=outbox.recipient_id AND deleted_at IS NULL)`)
@@ -81,8 +79,8 @@ export async function dispatchOutbox(env, { fetchTarget = globalThis.fetch, now 
     AND (expires_at<=? OR (first_attempt_at IS NOT NULL AND first_attempt_at<=?))`).bind(start, start, start - 23 * HOUR).run();
   const jobs = await env.DB.prepare(`SELECT id FROM outbox WHERE status IN ('queued','sending')
     AND next_attempt_at<=? AND expires_at>? AND (lease_until IS NULL OR lease_until<=?)
-    AND (kind<>'winner' OR EXISTS(SELECT 1 FROM drawing WHERE published_at IS NOT NULL))
-    ORDER BY CASE kind WHEN 'admin_link' THEN 0 WHEN 'entry_link' THEN 1 WHEN 'weekly_report' THEN 2 ELSE 3 END,
+    AND (kind NOT IN ('winner','waitlist') OR EXISTS(SELECT 1 FROM drawing WHERE published_at IS NOT NULL))
+    ORDER BY CASE kind WHEN 'admin_link' THEN 0 WHEN 'door_link' THEN 0 WHEN 'entry_link' THEN 1 WHEN 'weekly_report' THEN 2 ELSE 3 END,
       created_at LIMIT 10`).bind(start, start, start).all();
   let accepted = 0;
   let attempted = 0;
@@ -94,12 +92,13 @@ export async function dispatchOutbox(env, { fetchTarget = globalThis.fetch, now 
       attempts=attempts+1, first_attempt_at=COALESCE(first_attempt_at,?)
       WHERE id=? AND status IN ('queued','sending') AND next_attempt_at<=? AND expires_at>?
       AND (lease_until IS NULL OR lease_until<=?)
-      AND (kind<>'winner' OR EXISTS(SELECT 1 FROM drawing WHERE published_at IS NOT NULL))
+      AND (kind NOT IN ('winner','waitlist') OR EXISTS(SELECT 1 FROM drawing WHERE published_at IS NOT NULL))
       AND (first_attempt_at IS NULL OR first_attempt_at>?) RETURNING *,
-      CASE WHEN kind='winner' AND payload='' THEN
-        (SELECT json_object('name',e.name,'email',e.email,'group_size',e.group_size) FROM entries e
-          WHERE e.id=outbox.recipient_id AND e.deleted_at IS NULL)
-        ELSE NULL END AS winner_json`)
+      CASE WHEN kind IN ('winner','waitlist') AND payload='' THEN
+        (SELECT json_object('id',e.id,'name',e.name,'email',e.email,'group_size',e.group_size,'status',r.status,'preview_id',d.preview_id,'selected_cutoff_at',s.selected_cutoff_at)
+          FROM entries e JOIN results r ON r.entry_id=e.id,drawing d,door_settings s
+          WHERE e.id=outbox.recipient_id AND e.deleted_at IS NULL AND d.id=1 AND d.published_at IS NOT NULL AND s.id=1)
+        ELSE NULL END AS result_json`)
       .bind(timestamp + 120_000, lease, timestamp, candidate.id, timestamp, timestamp, timestamp, timestamp - 23 * HOUR).first();
     if (!job) continue;
     attempted += 1;
@@ -107,9 +106,9 @@ export async function dispatchOutbox(env, { fetchTarget = globalThis.fetch, now 
     let stage = 'materialize';
     let evidence;
     try {
-      // Publication queues only IDs. Freeze the private winner email exactly once
+      // Publication queues only IDs. Freeze each private results email exactly once
       // before its first send; subsequent retries decrypt the identical payload.
-      if (job.kind === 'winner' && !job.payload && !await materializeWinner(env, job)) continue;
+      if (['winner','waitlist'].includes(job.kind) && !job.payload && !await materializeResult(env, job)) continue;
       stage = 'decrypt';
       const payload = await decodePayload(env, job.payload, job.id);
       stage = 'request_setup';

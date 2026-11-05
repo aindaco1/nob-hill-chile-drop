@@ -34,7 +34,7 @@ The Hot Spot offers close views, music, alcohol sales for eligible adults and a 
 | One random rank per group | A larger group gets no additional weight; this is not a per-person raffle |
 | Stop at the first whole group that does not fit | Smaller later groups do not skip ahead; unused capacity is possible |
 | Prepare once, review, commit, publish | Preparing already fixes the random order and locks registration/capacity; there is no reroll/reset endpoint |
-| Publish counts publicly and notify selected groups privately | Guest identities and ranks are not public |
+| Publish counts publicly and notify every verified group privately | Guest identities and ranks are not public |
 | Dedicated drawing service with shared Platform primitives | Store's RSVP workflow confirms admission immediately; a pending drawing entry is not an RSVP ticket |
 | Jekyll + native JS + small Worker | Preserve the existing structure and keep changes DRY and KISS |
 
@@ -80,15 +80,23 @@ These are a handoff list, not authorization to implement or publish them automat
 | Item | What is still needed |
 | --- | --- |
 | Registration close/drawing announcement | Organizer-selected dates and public wording; manual controls already exist |
-| Arrival and admission fulfillment | Check-in location, acceptable proof, group arrival policy and guest instructions; no QR/ticket/check-in system is implemented |
+| Arrival and admission fulfillment | Check-in location and final door staffing; QR passes, together-only group arrival, restricted volunteer check-in and organizer-set cutoff are implemented in source; see [Check-in](CHECK_IN.md) |
 | Visitor logistics | Approved public viewing map, parking, street closures/access, accessible routes/restrooms and bag rules |
 | Approved footage | A usable video and confirmed permission; no placeholder footage is presented as real |
 | Final public launch | Organizer decision on indexing, final logistics and any domain cutover |
 | Domain | Confirm ownership and access before DNS or naming changes |
-| Waitlist | No automatic promotion, cancellation/reallocation or second drawing workflow |
+| Waitlist | Volunteers may admit whole waitlisted groups at the door after the reservation cutoff when space permits; no automatic promotion, cancellation/reallocation or second drawing workflow |
 | Data retention | Organizer-approved retention/deletion schedule; there is no automatic campaign-wide purge |
 | Mail observability | Provider acceptance is recorded; no delivery/bounce webhook or automatic inbox-delivery confirmation |
 | Future edition | Single-event schema and hardcoded email/API/calendar details need review; do not reset the existing drawing/database |
+
+## November 4 implementation: group QR and volunteer admission
+
+Every verified group receives a selected or waitlisted result email with a group QR when organizers publish. The waitlist message welcomes public attendance while making Hot Spot admission conditional. One code covers the whole group; everyone checks in together, and wristbands handle re-entry.
+
+Organizers add/revoke volunteer emails, set a reservation cutoff in Mountain Time, open/close check-in and view initial-admission totals/recent groups. The cutoff starts unset and check-in starts closed. Selected reservations are held until the cutoff; afterward unused reservations are released and volunteers may admit waitlisted groups at the door when there is room. Staff assess real capacity separately: the counter adds each group's size only on its first admission and does not track occupancy, departures or wristband returns.
+
+A QR scan only verifies. Signed-in volunteers see name, email, party size and status, then confirm the whole group is present and space is available before a guarded server write. Repeated/concurrent scans cannot count a group twice. Volunteers cannot change settings, run the drawing or export guest records. Guest QR links expose pass status but not contact information. See [Check-in](CHECK_IN.md) for procedures, privacy and acceptance limits, and [Operations](OPERATIONS.md#group-qr-and-volunteer-check-in-release) for the separate migration/Worker/Pages release. This section describes source behavior; release claims require exact live verification.
 
 ## Verified production snapshot
 

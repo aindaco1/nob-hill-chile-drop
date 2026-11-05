@@ -158,3 +158,11 @@ Review `assets/art/social-card.png` before committing it. Preserve font licenses
 ## Keeping the handbook current
 
 Update docs in the same commit as the relevant behavior. Check Markdown links, command names, file paths, configuration keys and known limitations. Keep dated production observations in Project distinct from durable procedures; do not mark email delivery, private administration or deployment verified without evidence for that surface.
+
+## Group QR and door changes
+
+Read [Check-in](CHECK_IN.md). Event admission wording starts in `_data/event.yml` and `_includes/admission-rules.html`; email copy is in `api/src/tickets.js`, guest copy in `assets/js/pass.js` / `manage-entry.js`, and calendar wording in `scripts/prepare-assets.mjs`. Keep whole-group arrival, cutoff, waitlist, wristbands and public viewing consistent across them.
+
+QR dependencies are pinned in the root lockfile. `prepare-assets.mjs` copies the QR generator, bundles the scanner as a lazy-loaded browser module and copies licenses. Do not edit the generated QR modules/license output. The current Platform minifier does not preserve `import.meta.url`; use the Liquid-rendered body `data-site-base` for subpath-aware QR URL validation.
+
+Run `npm --prefix api test`, `npm test` and `npm run api:check`. `tests/e2e/admission.spec.js` connects the real Worker to isolated SQLite through intercepted browser requests. Its simulated camera frame proves decoding/interface behavior, not physical camera operation. Sample emails use fake transport and do not establish inbox delivery. Never test check-in against real guest records.

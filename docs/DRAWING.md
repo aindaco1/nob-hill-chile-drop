@@ -10,7 +10,7 @@ This guide describes the implemented behavior. The public-facing version is [dra
 2. Confirm the email through the single-use link. Only verified entries participate. Email is trimmed/lowercased and unique; submitting an existing email sends access to its owner without overwriting their group.
 3. Use the private entry page to change name, location and group size while registration is open. Changing the email address is not supported by this form/API.
 4. After registration closes, no new entries, first-time verifications or group edits are accepted. Already-verified owners can still request a link to see their status.
-5. After publication, selected groups receive an email. Every verified entrant can view their own selected/waitlisted status privately. Unselected groups do not receive a separate results email in the current implementation.
+5. After publication, every verified group receives a selected or waitlisted results email and group QR. Entrants can also view their result and QR privately. A waitlist QR does not guarantee admission; see [Check-in](CHECK_IN.md) for whole-group arrival, the reservation cutoff and volunteer admission.
 
 One entry per email is an ownership/deduplication rule, not proof of one real person or household. There is no stronger identity or cross-address duplicate detection. Link lifetime and rate limits are in [API](API.md).
 
@@ -44,8 +44,8 @@ The [organizer desk](https://aindaco1.github.io/nob-hill-chile-drop/admin/) uses
 | Prepare drawing | Confirm the locking notice, then prepare. This immediately saves the random order and capacity and prevents reopening/capacity changes. It is not a disposable preview. |
 | Review fixed result | Review selected/waitlisted totals and unused capacity. Repeating preparation returns the same saved order. The API preview response contains the private rank details; the UI shows totals. |
 | Commit drawing | Saves results from that exact prepared preview; guests still cannot see them and winner notifications have not been queued. Repeating the same commit is idempotent. |
-| Publish | Confirm the publication notice. This exposes private results to entrants and public counts, and atomically queues selected-group notifications. It does not wait for delivery. Repeating publish does not queue duplicates. |
-| Follow through | Check queue/provider status and provide the separately approved arrival/check-in instructions. The application does not issue admission QR codes or check people in. |
+| Publish | Confirm the publication notice. This exposes private results to entrants and public counts, and atomically queues selected and waitlisted group notifications with QR codes. It does not wait for delivery. Repeating publish does not queue duplicates. |
+| Follow through | Check queue/provider status and set the reservation cutoff, approve volunteers and open check-in at the event. Follow [Check-in](CHECK_IN.md) for QR verification and explicit whole-group admission. |
 
 Prepare, commit and publish are separate deliberate steps. Nothing schedules or automatically runs the drawing. The configured cron only dispatches mail, cleans expired auth/rate-limit records and queues weekly reports. Closing registration does not cancel a valid already-verified owner's access.
 

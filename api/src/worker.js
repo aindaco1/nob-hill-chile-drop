@@ -1,3 +1,5 @@
+import { createDoor } from './door.js';
+import { ticketsReady, ownerPass, ticketRecord, publicTicket } from './tickets.js';
 import { normalizeEmail, randomToken, sha256Hex } from '../../shared/dust-wave-platform/packages/worker-core/src/crypto.js';
 import { readJsonObject, RequestValidationError } from '../../shared/dust-wave-platform/packages/worker-core/src/request-validation.js';
 import { prepareDrawing, drawingSummary } from './drawing.js';
@@ -11,6 +13,7 @@ const ENTRY_FORM_VERSION = 'group-location-2026-11-04';
 const MAX_GROUP_SIZE = 8;
 const GENERIC = { ok: true, message: 'If this address can receive a link, check your email. Links may take a few minutes.' };
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const door = createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, siteLink, requireMail });
 
 function fail(message, status = 400, code = 'invalid_request') { throw new RequestValidationError(message, code, status); }
 function admins(env) { return String(env.ADMIN_EMAILS || '').split(',').map(normalizeEmail).filter(Boolean); }
@@ -278,22 +281,24 @@ async function commitDrawing(request, env, actor, now) {
 }
 async function publishDrawing(env, actor, now) {
   requireMail(env);
+  if (!ticketsReady(env)) fail('Group pass delivery is not configured.', 503, 'tickets_unavailable');
   const drawing = await env.DB.prepare('SELECT * FROM drawing WHERE id=1').first();
   if (!drawing) fail('Commit a reviewed drawing before publishing.', 409, 'drawing_missing');
   if (drawing.published_at) return { ok: true, publishedAt: new Date(drawing.published_at).toISOString(), alreadyPublished: true };
-  // Queue only immutable IDs in one transaction. Each winner's private payload
+  // Queue only immutable IDs in one transaction. Each group's private payload
   // is frozen by the dispatcher before any send, avoiding bulk HTTP-request CPU.
   const result = await env.DB.batch([
     env.DB.prepare(`INSERT OR IGNORE INTO outbox (id,kind,recipient_id,payload,created_at,next_attempt_at,expires_at)
-      SELECT 'winner:'||d.preview_id||':'||e.id,'winner',e.id,'',?,?,?
+      SELECT (CASE WHEN r.status='selected' THEN 'winner' ELSE 'waitlist' END)||':'||d.preview_id||':'||e.id,
+        CASE WHEN r.status='selected' THEN 'winner' ELSE 'waitlist' END,e.id,'',?,?,?
       FROM drawing d,results r JOIN entries e ON e.id=r.entry_id
-      WHERE d.id=1 AND d.published_at IS NULL AND r.status='selected' AND e.deleted_at IS NULL`)
+      WHERE d.id=1 AND d.published_at IS NULL AND e.deleted_at IS NULL`)
       .bind(now, now, now + 7 * DAY),
     env.DB.prepare('UPDATE drawing SET published_at=? WHERE id=1 AND published_at IS NULL').bind(now),
     audit(env, 'draw_publish_requested', actor, now)
   ]);
   const published = await env.DB.prepare('SELECT published_at FROM drawing WHERE id=1').first();
-  return { ok: true, publishedAt: new Date(published.published_at).toISOString(), queuedWinnerEmails: result[0].meta.changes };
+  return { ok: true, publishedAt: new Date(published.published_at).toISOString(), queuedResultEmails: result[0].meta.changes };
 }
 async function eraseEntry(env, id, actor, now) {
   if (!/^[0-9a-f-]{36}$/.test(id)) fail('Entry not found.', 404);
@@ -335,7 +340,7 @@ export function createWorker(dependencies = {}) {
         }
         if (method === 'GET' && path === '/health') {
           await settings(env);
-          return reply(request, env, { ok: true, emailConfigured: mailReady(env) });
+          return reply(request, env, { ok: true, emailConfigured: mailReady(env), ticketsConfigured: ticketsReady(env) });
         }
         if (method === 'GET' && path === '/api/config') {
           const row = await settings(env);
@@ -347,13 +352,19 @@ export function createWorker(dependencies = {}) {
         }
         if (!allowedOrigin(request, env)) fail('Origin is not allowed.', 403, 'origin_forbidden');
         const now = deps.now();
-        if (['POST', 'PATCH', 'DELETE'].includes(method)) {
+        if (['POST', 'PATCH', 'DELETE'].includes(method) && !path.startsWith('/api/door/')) {
           const ip = request.headers.get('cf-connecting-ip') || 'unknown';
           await rateLimit(env, `ip:${ip}`, 60, 15 * MINUTE, now);
         }
         let payload;
         let status = 200;
-        if (method === 'POST' && path === '/api/entries') { payload = await register(request, env, now); status = 202; }
+        if (path.startsWith('/api/door/')) payload = await door.handle(request, env, now, path);
+        else if (method === 'POST' && path === '/api/pass') {
+          const row = await ticketRecord(env, (await bodyOf(request)).ticket);
+          payload = { pass: publicTicket(row, await door.config(env)) };
+        }
+        else if (path === '/api/entries/pass' && method === 'GET') payload = await ownerPass(env, await authenticate(request, env, 'entry_session', now));
+        else if (method === 'POST' && path === '/api/entries') { payload = await register(request, env, now); status = 202; }
         else if (method === 'POST' && path === '/api/entries/link') { payload = await requestEntryLink(request, env, now); status = 202; }
         else if (method === 'POST' && path === '/api/entries/verify') payload = await verify(request, env, now, 'entry');
         else if (method === 'POST' && path === '/api/admin/login') { payload = await login(request, env, now); status = 202; }
@@ -362,7 +373,10 @@ export function createWorker(dependencies = {}) {
         else if (path === '/api/entries' && method === 'PATCH') payload = await updateEntry(request, env, await authenticate(request, env, 'entry_session', now), now);
         else if (path.startsWith('/api/admin/')) {
           const actor = await authenticate(request, env, 'admin_session', now);
-          if (method === 'GET' && path === '/api/admin/entries') payload = await adminEntries(env, url);
+          if (method === 'GET' && path === '/api/admin/door') payload = await door.summary(env, now);
+          else if (method === 'PATCH' && path === '/api/admin/door') payload = await door.updateSettings(request, env, actor, now);
+          else if (method === 'POST' && path === '/api/admin/volunteers') payload = await door.updateStaff(request, env, actor, now);
+          else if (method === 'GET' && path === '/api/admin/entries') payload = await adminEntries(env, url);
           else if (method === 'GET' && path === '/api/admin/entries.csv') return reply(request, env, await exportEntries(env), 200, 'text/csv; charset=utf-8');
           else if (method === 'PATCH' && path === '/api/admin/settings') payload = await updateSettings(request, env, actor, now);
           else if (method === 'PATCH' && path === '/api/admin/display') payload = await updateDisplay(request, env, actor, now);
@@ -373,8 +387,8 @@ export function createWorker(dependencies = {}) {
           else fail('Not found.', 404, 'not_found');
         } else fail('Not found.', 404, 'not_found');
         // Keep publication's atomic ID-only queue separate from delivery work.
-        // The cron dispatches winners; entry/login links get a prompt first attempt.
-        if (method === 'POST' && ['/api/entries', '/api/entries/link', '/api/admin/login'].includes(path)) {
+        // The cron dispatches results; entry/login links get a prompt first attempt.
+        if (method === 'POST' && ['/api/entries', '/api/entries/link', '/api/admin/login', '/api/door/login'].includes(path)) {
           context?.waitUntil(dispatchOutbox(env, deps));
         }
         return reply(request, env, payload, status);
@@ -390,7 +404,8 @@ export function createWorker(dependencies = {}) {
         await dispatchOutbox(env, deps);
         await env.DB.batch([
           env.DB.prepare('DELETE FROM rate_limits WHERE expires_at<?').bind(now - DAY),
-          env.DB.prepare('DELETE FROM tokens WHERE expires_at<?').bind(now - DAY)
+          env.DB.prepare('DELETE FROM tokens WHERE expires_at<?').bind(now - DAY),
+          env.DB.prepare('DELETE FROM door_tokens WHERE expires_at<?').bind(now - DAY)
         ]);
       })();
       context?.waitUntil(operation);

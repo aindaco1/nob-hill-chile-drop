@@ -20,5 +20,9 @@
     "esbuild": "0.28.1",
     "wrangler": "4.154.0",
     "yaml": "2.9.0"
+  },
+  "dependencies": {
+    "jsqr": "1.4.0",
+    "qrcode-generator": "2.0.4"
   }
 }

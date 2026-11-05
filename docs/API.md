@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md) · [Drawing behavior](DRAWING.md) · [Operations](OPERATIONS.md)
 
-Implementation: [`api/src/worker.js`](../api/src/worker.js). Production base: `https://nob-hill-chile-drop-api.jogo.workers.dev`. These routes are unversioned; coordinate browser and Worker releases for contract changes. This is a reference, not permission to mutate production.
+Implementation: [`api/src/worker.js`](../api/src/worker.js). Group pass, volunteer and door-admin routes are documented in [Check-in API](CHECK_IN.md#api). Production base: `https://nob-hill-chile-drop-api.jogo.workers.dev`. These routes are unversioned; coordinate browser and Worker releases for contract changes. This is a reference, not permission to mutate production.
 
 ## Requests, authentication and responses
 
@@ -68,7 +68,7 @@ An entry object contains `id`, `name`, `email`, `groupSize`, `verified`, `status
 | `PATCH /api/admin/display` | Admin Bearer + Origin | `{heroMedia: "animation" \| "channel26"}`; no other fields | 200 `{settings}`; available before and after preparation/publication |
 | `POST /api/admin/draw/preview` | Admin Bearer + Origin | `{}` | 200 fixed preview; **first call prepares and locks the drawing** |
 | `POST /api/admin/draw/commit` | Admin Bearer + Origin | `{previewId}` | 200 `{ok, previewId, committedAt, published}` |
-| `POST /api/admin/draw/publish` | Admin Bearer + Origin | `{}` | 200 `{ok, publishedAt, queuedWinnerEmails}`; repeat returns `alreadyPublished: true` |
+| `POST /api/admin/draw/publish` | Admin Bearer + Origin | `{}` | 200 `{ok, publishedAt, queuedResultEmails}`; repeat returns `alreadyPublished: true` |
 | `DELETE /api/admin/entries/:id` | Admin Bearer + Origin | UUID path parameter | 200 `{ok, action: "deleted"}` before preparation, or `"anonymized"` afterward |
 
 Display changes update only `settings.hero_media` and add a `display_updated` audit record in one batch. They do not advance the drawing revision, change entries/capacity/registration, or queue messages. Repeating the same display value has the same visible effect. Arbitrary iframe URLs/HTML are not accepted.
@@ -115,3 +115,5 @@ Mutating requests are limited to 60 per IP per 15-minute bucket. Entry registrat
 | 503 `service_error` | Inspect service health/configuration and private diagnostics; an uncertain mutation may already have succeeded |
 
 Use [the isolated fixture](../api/test/helpers.js) for write examples and regression tests. Safe production probes are the two read-only routes shown in [Operations](OPERATIONS.md). Do not paste live tokens into shell history, docs or support threads.
+
+Publication returns `queuedResultEmails` (selected plus waitlisted) on first publication; repeats return `alreadyPublished` without queuing duplicates. Health additionally returns `ticketsConfigured`, which checks the independent ticket-signing key configuration.
