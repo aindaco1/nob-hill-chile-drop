@@ -1,3 +1,5 @@
+{% if include.compact %}<div class="form-row">{% endif %}
 <label class="field" for="{{ include.prefix }}-city">City<input id="{{ include.prefix }}-city" name="city" type="text" autocomplete="address-level2" maxlength="120" required></label>
 <label class="field" for="{{ include.prefix }}-state">State/Province<input id="{{ include.prefix }}-state" name="stateProvince" type="text" autocomplete="address-level1" maxlength="120" required></label>
+{% if include.compact %}</div>{% endif %}
 <label class="field" for="{{ include.prefix }}-country">Country<input id="{{ include.prefix }}-country" name="country" type="text" autocomplete="country-name" maxlength="120" value="USA" required></label>

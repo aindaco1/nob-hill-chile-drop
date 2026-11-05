@@ -301,3 +301,25 @@ test('backgrounds are still with reduced motion, absent in forced colors and con
   await expect(page.locator('[data-falling-chiles]:visible')).toHaveCount(0);
   await page.goto('entry/');await expect(page.locator('[data-falling-chiles]')).toHaveCount(0);
 });
+
+
+test('compact drawing field pairs wrap on narrow cards and enlarged text with keyboard order intact',async({page})=>{
+  await mock(page);
+  const form=page.locator('[data-entry-form]');
+  for(const [width,paired] of [[1440,true],[1024,true],[768,false],[640,true],[375,false],[320,false]]){
+    await page.setViewportSize({width,height:900});await page.goto('./');await waitForStableRendering(page);await expect(form).toBeVisible();
+    for(const [a,b] of [['email','groupSize'],['city','stateProvince']]){
+      const first=await form.locator(`[name=${a}]`).boundingBox(),second=await form.locator(`[name=${b}]`).boundingBox();
+      if(paired){expect(Math.abs(first.y-second.y)).toBeLessThan(1);expect(second.x).toBeGreaterThan(first.x+first.width);}
+      else expect(second.y).toBeGreaterThan(first.y+first.height);
+      expect(first.height).toBeGreaterThanOrEqual(48);expect(second.height).toBeGreaterThanOrEqual(48);
+    }
+    await applyTextScale(page,200);
+    for(const [a,b] of [['email','groupSize'],['city','stateProvince']]){
+      const first=await form.locator(`[name=${a}]`).boundingBox(),second=await form.locator(`[name=${b}]`).boundingBox();expect(second.y).toBeGreaterThan(first.y+first.height);
+    }
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  }
+  await form.locator('[name=email]').focus();
+  for(const name of ['groupSize','city','stateProvince','country']){await page.keyboard.press('Tab');await expect(form.locator(`[name=${name}]`)).toBeFocused();}
+});

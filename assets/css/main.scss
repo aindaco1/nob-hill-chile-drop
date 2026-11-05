@@ -172,3 +172,17 @@ h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
 }
 @media(prefers-reduced-motion:reduce){.falling-chiles.has-fall-animation .falling-chiles__drop{top:var(--rest);transform:none}}
 @media(forced-colors:active){.falling-chiles{display:none}}
+
+// Compact drawing card; field pairs wrap based on available width and text size.
+.entry-card{--entry-card-padding:clamp(1rem,2.5vw,1.5rem);padding:var(--entry-card-padding)}
+.entry-card h3{margin:0 0 .75rem}
+.entry-card .access-pass__tear{margin:.875rem calc(-1 * var(--entry-card-padding)) .75rem}
+.entry-card .access-pass__notice{margin:.5rem 0 .75rem}
+.entry-card .form-status{padding:.625rem .75rem}
+.entry-card .form-stack{gap:.75rem;margin-top:.75rem}
+.entry-card .form-row{display:flex;flex-wrap:wrap;gap:.75rem}
+.entry-card .form-row>.field{flex:1 1 11rem}
+.entry-card .field{gap:.25rem}
+.entry-card .field input,.entry-card .field select{min-height:48px;padding:.5rem .75rem;line-height:1.4}
+.entry-card .consent{line-height:1.5}
+.entry-card>.text-link{margin-top:.5rem}
