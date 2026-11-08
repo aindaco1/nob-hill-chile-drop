@@ -44,9 +44,19 @@ async function setup(page) {
     expect(new URL(page.url()).hash).toBe('');
   }
   async function scan(code) {
-    await page.locator('[data-door-lookup] input').fill(ticketUrl(f.env, code));
-    await page.locator('[data-door-lookup] button').click();
+    await page.evaluate(data => {
+      navigator.mediaDevices.getUserMedia = async () => {
+        const image = new Image(); image.src = data; await image.decode();
+        const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480;
+        const context = canvas.getContext('2d'); context.fillStyle = 'white'; context.fillRect(0, 0, 640, 480);
+        context.drawImage(image, (640-image.naturalWidth)/2, (480-image.naturalHeight)/2);
+        const stream = canvas.captureStream(10); window.__cameraStream = stream; return stream;
+      };
+    }, ticketImage(ticketUrl(f.env, code)));
+    await page.locator('[data-camera-start]').click();
     await expect(page.locator('[data-door-ticket]')).toBeVisible();
+    await expect(page.locator('[data-ticket-heading]')).toBeFocused();
+    await expect(page.locator('[data-ticket-badge]')).toBeInViewport({ ratio: 1 });
   }
   return { f, admin, selected, waitlisted, selectedCode, waitlistCode, settings, login, scan, errors, dropResponse: () => { abortCheckIn = true; } };
 }
@@ -116,26 +126,38 @@ test('waitlist check-in stays closed until cutoff and recovers safely after a lo
   } finally { s.f.close(); }
 });
 
-test('camera pipeline reads an actual QR frame, stops the camera and waits for volunteer confirmation', async ({ page }) => {
+for (const reducedMotion of ['no-preference', 'reduce']) {
+  test(`camera scan reveals the result card and stops without admitting (${reducedMotion})`, async ({ page }) => {
+    const s = await setup(page);
+    try {
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.emulateMedia({ reducedMotion });
+      await s.settings(); await s.login();
+      await expect(page.locator('[data-door-lookup]')).toHaveCount(0);
+      await s.scan(s.selectedCode);
+      await expect(page.locator('[data-ticket-name]')).toHaveText(s.selected.name);
+      await expect(page.locator('[data-camera]')).toBeHidden();
+      expect(await page.evaluate(() => window.__cameraStream.getTracks().every(track => track.readyState === 'ended'))).toBe(true);
+      await expect.poll(async () => (await page.locator('[data-door-ticket]').boundingBox()).y).toBeCloseTo(16, 0);
+      expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+      expect(s.f.DB.prepare('SELECT COUNT(*) AS n FROM admissions').first().n).toBe(0);
+      expect(s.errors).toEqual([]);
+    } finally { s.f.close(); }
+  });
+}
+
+test('camera permission failure allows another scan without admitting a group', async ({ page }) => {
   const s = await setup(page);
   try {
     await s.settings(); await s.login();
-    const dataUrl = ticketImage(ticketUrl(s.f.env, s.selectedCode));
-    await page.evaluate(data => {
-      navigator.mediaDevices.getUserMedia = async () => {
-        const image = new Image(); image.src = data;
-        await image.decode(); const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480;
-        const context = canvas.getContext('2d'); context.fillStyle = 'white'; context.fillRect(0,0,640,480);
-        context.drawImage(image, (640-image.naturalWidth)/2, (480-image.naturalHeight)/2);
-        const stream = canvas.captureStream(10);
-        window.__cameraStream = stream;
-        return stream;
-      };
-    }, dataUrl);
+    await page.evaluate(() => {
+      navigator.mediaDevices.getUserMedia = async () => { throw new DOMException('Denied', 'NotAllowedError'); };
+    });
     await page.locator('[data-camera-start]').click();
-    await expect(page.locator('[data-ticket-name]')).toHaveText(s.selected.name);
-    await expect(page.locator('[data-camera]')).toBeHidden();
-    expect(await page.evaluate(() => window.__cameraStream.getTracks().every(track => track.readyState === 'ended'))).toBe(true);
+    await expect(page.locator('[data-door-status]')).toContainText('Allow camera access and try scanning again');
+    await expect(page.locator('[data-camera-start]')).toBeEnabled();
+    await expect(page.locator('[data-door-ticket]')).toBeHidden();
+    await s.scan(s.selectedCode);
     expect(s.f.DB.prepare('SELECT COUNT(*) AS n FROM admissions').first().n).toBe(0);
     expect(s.errors).toEqual([]);
   } finally { s.f.close(); }
@@ -147,15 +169,16 @@ test('guest and volunteer pages fit small phones, enlarged text and keyboard con
     await s.settings(s.f.now()); await s.login();
     for (const size of [{width:320,height:568},{width:375,height:667},{width:1280,height:900}]) {
       await page.setViewportSize(size); await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.goto(`${base}/check-in/`); await s.scan(s.waitlistCode);
-      if (size.width === 375) await applyTextScale(page, 2);
+      await page.goto(`${base}/check-in/`);
+      if (size.width === 375) await applyTextScale(page, 200);
+      await s.scan(s.waitlistCode);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       expect(await page.locator('.door-ticket,.ticket-details dd').evaluateAll(elements => elements.every(element => element.getBoundingClientRect().right <= innerWidth+1))).toBe(true);
       await page.locator('[name=wholeGroupPresent]').focus(); await page.keyboard.press('Space'); await page.keyboard.press('Tab');
       await expect(page.locator('[name=spaceConfirmed]')).toBeFocused();
       await page.goto(ticketUrl(s.f.env,s.waitlistCode,'pass'));
       await expect(page.locator('[data-pass-image]')).toBeVisible();
-      if (size.width === 375) await applyTextScale(page, 2);
+      if (size.width === 375) await applyTextScale(page, 200);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
     expect(s.errors).toEqual([]);
@@ -180,7 +203,7 @@ test('organizer controls cutoff in Mountain Time, volunteer access and an initia
     for (const width of [320,375]) {
       await page.setViewportSize({width,height:667}); await page.reload();
       await expect(page.locator('[data-volunteers]')).toContainText('volunteer@example.test');
-      if (width === 375) await applyTextScale(page,2);
+      if (width === 375) await applyTextScale(page,200);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
     await page.getByRole('button', {name:'Remove volunteer access for volunteer@example.test'}).click();

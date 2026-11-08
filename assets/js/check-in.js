@@ -29,7 +29,7 @@ function render(data) {
   find('[data-ticket-name]').textContent = ticket.name;
   find('[data-ticket-email]').textContent = ticket.email;
   find('[data-ticket-size]').textContent = ticket.groupSize;
-  find('[data-ticket-note]').textContent = used ? `Checked in ${new Date(ticket.checkedInAt).toLocaleString()} by ${ticket.checkedInBy}. Do not issue another initial admission; use wristbands for re-entry.` : selected ? (door.reservationReleased ? 'The reservation cutoff has passed. Confirm there is space before admitting this group.' : 'This group was selected. Admit everyone together after confirming available space.') : door.waitlistOpen ? 'Waitlist check-in is open. This QR is not a reservation. Confirm there is room for the whole group.' : 'Selected reservations are still held. Do not admit this waitlisted group yet.';
+  find('[data-ticket-note]').textContent = used ? `Checked in ${new Date(ticket.checkedInAt).toLocaleString()} by ${ticket.checkedInBy}. Do not issue another initial admission; use wristbands for re-entry.` : selected ? (door.reservationReleased ? 'The reservation cutoff has passed.' : 'This group was selected. Admit everyone together.') : door.waitlistOpen ? 'Waitlist check-in is open. This QR is not a reservation.' : 'Selected reservations are still held. Do not admit this waitlisted group yet.';
   confirm.hidden = used || !door.admissionOpen || (!selected && !door.waitlistOpen);
   find('[data-check-in-button]').textContent = selected ? `Check in all ${ticket.groupSize} people` : `Admit waitlisted group of ${ticket.groupSize}`;
 }
@@ -40,9 +40,10 @@ async function inspect(value) {
   busy = true; status(feedback, 'Verifying this group…');
   try {
     const data = await request('/api/door/inspect', { method: 'POST', body: { ticket: credential } }, session);
-    render(data); requestId = crypto.randomUUID(); find('[data-door-lookup]').reset();
+    render(data); requestId = crypto.randomUUID();
     status(feedback, data.ticket.checkedInAt ? 'This group has already checked in.' : 'QR verified. Review the group before confirming admission.', 'success');
-    find('[data-ticket-heading]').focus();
+    find('[data-ticket-heading]').focus({ preventScroll: true });
+    find('[data-door-ticket]').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   } catch (error) { fail(error); } finally { busy = false; }
 }
 async function start() {
@@ -56,7 +57,6 @@ async function start() {
   } catch (error) { signedOut(); fail(error); }
 }
 login.addEventListener('submit', event => { event.preventDefault(); withSubmit(login, async () => { try { await request('/api/door/login', { method: 'POST', body: { email: login.elements.email.value } }); status(feedback, 'If your email has volunteer access, a sign-in link will arrive shortly. Open it in this browser.', 'success'); } catch(error) { fail(error); } }); });
-find('[data-door-lookup]').addEventListener('submit', event => { event.preventDefault(); inspect(event.currentTarget.elements.ticket.value); });
 confirm.addEventListener('submit', event => {
   event.preventDefault(); if (!snapshot || busy) return;
   withSubmit(confirm, async () => {
@@ -74,7 +74,7 @@ find('[data-camera-start]').addEventListener('click', async () => {
   clearResult(); find('[data-camera-start]').disabled = true;
   const attempt = ++cameraAttempt;
   try {
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access is unavailable. Paste the group QR link instead.');
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access is unavailable.');
     scanner ||= (await import('./qr-reader.js')).default;
     if (attempt !== cameraAttempt || document.hidden) return;
     const acquired = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' } } });
@@ -94,7 +94,7 @@ find('[data-camera-start]').addEventListener('click', async () => {
       timer = setTimeout(scan, 200);
     };
     scan();
-  } catch(error) { stopCamera(); fail(new Error('Could not start the camera. Allow camera access or paste the group QR link instead.')); }
+  } catch(error) { stopCamera(); fail(new Error('Could not start the camera. Allow camera access and try scanning again.')); }
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopCamera(); });
 window.addEventListener('pagehide', stopCamera);

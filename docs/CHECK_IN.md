@@ -29,9 +29,11 @@ There is no volunteer export, drawing, settings, partial-admission, exit, occupa
 
 Volunteers request a single-use email sign-in link (15 minutes). A successful sign-in creates a 12-hour session for the current browser tab. Existing organizers may use their organizer session in the scanner. Staff should use their own device, keep the scanner tab open, and sign out when handing it over; sign-out revokes that server session.
 
-The in-page camera scanner avoids opening a new tab for every guest. A QR link can also be pasted into the scanner. Camera permission is requested only on **Scan a group QR**; frames stay on the device. The scanner stops after reading a code, when the page is hidden, or when staff tap Stop camera.
+The in-page camera scanner avoids opening a new tab for every guest. There is no paste-link field or separate Verify group button. Camera permission is requested only on **Scan a group QR**; frames stay on the device. The scanner stops after reading a code, when the page is hidden, or when staff tap Stop camera. A successful scan scrolls the result card's validity badge into view and focuses its heading; reduced motion uses an immediate scroll.
 
 Verification shows the current name, email, whole-party size, selected/waitlisted status and any prior admission. Staff check both confirmations: the entire party is present, and there is room for everyone. Only then do they press **Check in all N people** / **Admit waitlisted group of N**. Waitlist action is hidden and server-blocked before the cutoff. Unknown/altered codes, revoked staff access and closed check-in are rejected.
+
+The scanner keeps its routine guidance brief: status/cutoff information, the two confirmations and wristband instructions. Capacity assessment and connection-recovery procedures remain in this guide; an actual failed check-in still tells staff to scan again to confirm saved status.
 
 An already-admitted group shows its time and responsible volunteer; it cannot be counted again. Issue wristbands only after confirmed success. If the connection fails, the write may have succeeded: reconnect and scan again to recover authoritative status before admitting anyone. There is no offline acceptance or deferred check-in queue.
 

@@ -98,6 +98,8 @@ Organizers add/revoke volunteer emails, set a reservation cutoff in Mountain Tim
 
 A QR scan only verifies. Signed-in volunteers see name, email, party size and status, then confirm the whole group is present and space is available before a guarded server write. Repeated/concurrent scans cannot count a group twice. Volunteers cannot change settings, run the drawing or export guest records. Guest QR links expose pass status but not contact information. See [Check-in](CHECK_IN.md) for procedures, privacy and acceptance limits, and [Operations](OPERATIONS.md#group-qr-and-volunteer-check-in-release) for the separate migration/Worker/Pages release. This section describes source behavior; release claims require exact live verification.
 
+November 7 scanner refinement: remove the manual paste-link field and Verify group button. Successful scans bring the result card and its validity badge into view, with keyboard focus on the heading and no animated scrolling for reduced motion. Routine guidance is shortened; both admission confirmations and server checks remain. Capacity and connection-recovery procedures stay in the operator guide, and actual request failures still prompt a rescan.
+
 ## Verified production snapshot
 
 Read-only checks on **October 28, 2026** established:
