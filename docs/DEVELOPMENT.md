@@ -166,3 +166,11 @@ Read [Check-in](CHECK_IN.md). Event admission wording starts in `_data/event.yml
 QR dependencies are pinned in the root lockfile. `prepare-assets.mjs` copies the QR generator, bundles the scanner as a lazy-loaded browser module and copies licenses. Do not edit the generated QR modules/license output. The current Platform minifier does not preserve `import.meta.url`; use the Liquid-rendered body `data-site-base` for subpath-aware QR URL validation.
 
 Run `npm --prefix api test`, `npm test` and `npm run api:check`. `tests/e2e/admission.spec.js` connects the real Worker to isolated SQLite through intercepted browser requests. Its simulated camera frame proves decoding/interface behavior, not physical camera operation. Sample emails use fake transport and do not establish inbox delivery. Never test check-in against real guest records.
+
+## Local cleanup
+
+Keep the canonical checkout, pinned Platform submodule, installed dependencies, browser test tools, local configuration, private credentials and `api/.wrangler/state` for development. Keep one current `_site` preview; rebuild with `npm run build` after source changes. `npm test` can regenerate its test output.
+
+Old screenshots, logs, validation bundles, disposable fixture databases under `work/`, `api/work/` bundles and completed scratch clones can be moved to a recoverable archive after checking Git status and attached worktrees. Preserve any unique scripts/configuration and record original paths in a private cleanup manifest. Do not blanket-clean ignored files: that can remove credentials and local database state. Private backups and remote production/rehearsal databases are outside routine build cleanup.
+
+Remove a remote branch only after confirming that its work is merged or intentionally superseded and that no active checkout needs it. Retain current dependency caches and the latest Pages artifact; superseded dependency caches and obsolete build artifacts can be removed after the exact release is verified.

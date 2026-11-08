@@ -1,6 +1,6 @@
 # Project decisions and current state
 
-[Documentation index](../README.md) · Last reviewed **October 28, 2026** against application commit `3b45b14faa197ae40ebf71980d23ea47bea95d62` and the live read-only checks below.
+[Documentation index](../README.md) · Last reviewed **November 7, 2026** against application commit `190c4915df6023ad8d4022684dd6a79ded29cedb` and the live read-only checks below.
 
 ## Purpose and confirmed event facts
 
@@ -59,7 +59,7 @@ Visual reference: [event Instagram](https://www.instagram.com/nobhillchiledrop/)
 
 ## November 4 implementation: rules, consent and homepage stream
 
-This section describes source changes, not a production release. The dated live snapshot below remains the October 28 observation.
+These changes are deployed. The refreshed production snapshot below records the latest read-only checks.
 
 - `/hot-spot-rules/` covers event admission/hours, designated-area access, relevant venue conduct/safety policies, belongings, photography and recording. It is linked from the entry forms, drawing rules and footer. Venue terms were reviewed against [Hotel Zazz's policies](https://www.hotelzazz.com/policies) on November 4; room reservations, charges, checkout, room visitors' curfew and hotel check-in age are not event conditions. The service-animal wording follows [DOJ guidance](https://www.ada.gov/topics/service-animals/), without importing room-specific restrictions.
 - Registration and owner edits require a separate, unchecked recording-consent checkbox. `_data/event.yml` owns the notice and its version. The notice covers appearance, voice and name in any media, throughout the universe in perpetuity, for event advertising, marketing and promotion. The Worker validates literal agreement and the current version, and records version/time. Existing entries are not retroactively marked as consenting; drawing eligibility is unchanged. The entrant is asked to share the notice with the group, not to claim consent on behalf of every guest.
@@ -71,16 +71,16 @@ This section describes source changes, not a production release. The dated live 
 - Getting here uses three columns from 1100px (venue details, smaller map, public viewing information), two on tablets and one on phones. The map is 280px high on larger screens and 260px on phones; surrounding labels and attribution can expand with text size.
 - The Hot Spot uses a plain dark background with an opaque entry form. Its static repeating chile pattern was removed at the organizer’s request to keep the falling header/Questions/footer decoration visually distinct. See [asset provenance](DEVELOPMENT.md#photographic-chile-decoration) for the photo used by those falling chiles.
 - The separate personal-photos/photoshoot restriction was removed at the organizer's request. Recording-consent wording is unchanged but italicized in the rules, with regular type in the shared form checkbox. Event/access questions on the rules page go to `nobhillabqmainstreet@gmail.com`, owned by `_data/event.yml`; this is distinct from the existing private administration, privacy and report contacts.
-- Release requires additive migration `0002_media_consent_and_display.sql`, the Worker and Pages. New forms fail closed against an older consent contract; old forms receive a refresh instruction from the new Worker. See [Operations](OPERATIONS.md#rules-consent-and-stream-release) for sequencing and rollback limits.
+- The release uses additive migration `0002_media_consent_and_display.sql`, the Worker and Pages. New forms fail closed against an older consent contract; old forms receive a refresh instruction from the new Worker. See [Operations](OPERATIONS.md#rules-consent-and-stream-release) for sequencing and rollback limits.
 
 ## Remaining decisions and limitations
 
-These are a handoff list, not authorization to implement or publish them automatically.
+On November 7, the organizer deferred the items below until later. Keep the current registration, door, indexing, domain and retention settings until separately directed. These are a handoff list, not authorization to implement or publish them automatically.
 
 | Item | What is still needed |
 | --- | --- |
 | Registration close/drawing announcement | Organizer-selected dates and public wording; manual controls already exist |
-| Arrival and admission fulfillment | Check-in location and final door staffing; QR passes, together-only group arrival, restricted volunteer check-in and organizer-set cutoff are implemented in source; see [Check-in](CHECK_IN.md) |
+| Arrival and admission fulfillment | Check-in location and final door staffing; QR passes, together-only group arrival, restricted volunteer check-in and organizer-set cutoff are deployed; see [Check-in](CHECK_IN.md) |
 | Visitor logistics | Approved public viewing map, parking, street closures/access, accessible routes/restrooms and bag rules |
 | Approved footage | A usable video and confirmed permission; no placeholder footage is presented as real |
 | Final public launch | Organizer decision on indexing, final logistics and any domain cutover |
@@ -96,26 +96,30 @@ Every verified group receives a selected or waitlisted result email with a group
 
 Organizers add/revoke volunteer emails, set a reservation cutoff in Mountain Time, open/close check-in and view initial-admission totals/recent groups. The cutoff starts unset and check-in starts closed. Selected reservations are held until the cutoff; afterward unused reservations are released and volunteers may admit waitlisted groups at the door when there is room. Staff assess real capacity separately: the counter adds each group's size only on its first admission and does not track occupancy, departures or wristband returns.
 
-A QR scan only verifies. Signed-in volunteers see name, email, party size and status, then confirm the whole group is present and space is available before a guarded server write. Repeated/concurrent scans cannot count a group twice. Volunteers cannot change settings, run the drawing or export guest records. Guest QR links expose pass status but not contact information. See [Check-in](CHECK_IN.md) for procedures, privacy and acceptance limits, and [Operations](OPERATIONS.md#group-qr-and-volunteer-check-in-release) for the separate migration/Worker/Pages release. This section describes source behavior; release claims require exact live verification.
+A QR scan only verifies. Signed-in volunteers see name, email, party size and status, then confirm the whole group is present and space is available before a guarded server write. Repeated/concurrent scans cannot count a group twice. Volunteers cannot change settings, run the drawing or export guest records. Guest QR links expose pass status but not contact information. See [Check-in](CHECK_IN.md) for procedures, privacy and acceptance limits, and [Operations](OPERATIONS.md#group-qr-and-volunteer-check-in-release) for the separate migration/Worker/Pages release. The production snapshot below records the latest checked release.
 
 November 7 scanner refinement: remove the manual paste-link field and Verify group button. Successful scans bring the result card and its validity badge into view, with keyboard focus on the heading and no animated scrolling for reduced motion. Routine guidance is shortened; both admission confirmations and server checks remain. Capacity and connection-recovery procedures stay in the operator guide, and actual request failures still prompt a rescan.
 
+The organizer confirmed completion of the isolated phone rehearsal on November 7, including selected and waitlisted check-in. This is organizer-reported device acceptance; it does not establish coverage of every phone/browser. Automated tests still use isolated data and stub email. Private rehearsal records remain outside this public repository.
+
 ## Verified production snapshot
 
-Read-only checks on **October 28, 2026** established:
+Read-only checks on **November 7, 2026** established:
 
 | Surface | Evidence |
 | --- | --- |
-| Pages application release before this docs update | Commit `3b45b14`; [successful workflow 40739680700](https://github.com/aindaco1/nob-hill-chile-drop/actions/runs/40739680700) |
-| Public health | `/health`: `ok: true`, `emailConfigured: true` |
+| Pages application release before this docs update | Commit `190c491`; [successful workflow 42432457669](https://github.com/aindaco1/nob-hill-chile-drop/actions/runs/42432457669) |
+| Public health | `/health`: `ok: true`, `emailConfigured: true`, `ticketsConfigured: true` |
 | Registration | `/api/config`: `registrationOpen: true`, `capacity: 2000`, `locked: false`, `revision: 0` |
+| Form and display | Group-size maximum 8; current location/recording-consent contracts; homepage animation; public Pages still has noindex |
 | Published results | `/api/config`: `resultsPublished: false`, `results: null` |
-| Worker version | `5cf9b535-b22c-4169-b3a3-836c7cb67d8a`, 100% traffic; deployment created `2026-10-28T06:22:44.324418Z` |
+| Worker version | `ff9d70e8-486b-427b-9789-ae619ba29980`, 100% traffic |
 | D1 binding | `DB` points to `7afb3b21-843c-4967-bda4-edc5272e9a3c` |
-| Service configuration | Live bindings matched `api/wrangler.toml`; both required secret names were present |
+| Schema | No pending D1 migrations |
+| Service configuration | Expected D1 binding and mail, outbox and ticket-signing secret names were present |
 | Schedules | Every-minute outbox dispatcher and Monday `16:00 UTC` weekly report trigger present |
 
-These checks did **not** log in, query private entrants, send email, prove inbox delivery or run a drawing. `emailConfigured` checks configuration shape, not provider validity. Future agents must recheck live state for operational tasks. See [Operations](OPERATIONS.md).
+The production checks above did **not** log in, query private entrants, send email, prove inbox delivery or run a drawing. `emailConfigured` checks configuration shape, not provider validity. Future agents must recheck live state for operational tasks. See [Operations](OPERATIONS.md).
 
 ## Source provenance
 

@@ -70,3 +70,5 @@ All routes retain exact-origin restrictions, bounded JSON and private/no-store r
 ## Verification boundaries
 
 The API suite checks roles, revocation, one-time links, cutoff/closure, forged QR credentials, concurrent admissions, retries, privacy erasure and both outcome emails. Browser tests connect the actual frontend and Worker through the isolated fixture, decode the generated email image, use a simulated camera frame, exercise a dropped response after a successful write, and check phone/enlarged-text layouts. These do not establish real inbox delivery or a physical phone camera's behavior. Complete a real-device volunteer rehearsal before the event with explicitly approved test data.
+
+The organizer confirmed the isolated selected/waitlisted phone rehearsal complete on November 7, 2026. Event-day volunteer provisioning, reservation cutoff and door opening remain deferred organizer actions. Rehearse again when devices, staffing or connectivity change; this acceptance does not cover every phone/browser.
