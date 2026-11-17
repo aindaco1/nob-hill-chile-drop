@@ -1,4 +1,5 @@
 import { createDoor } from './door.js';
+import { adminRole, adminIdentity, configuredAdmin, createAdminAccess } from './admin-access.js';
 import { entryLinkEmail, staffLinkEmail } from './email-templates.js';
 import { ticketsReady, ownerPass, ticketRecord, publicTicket } from './tickets.js';
 import { normalizeEmail, randomToken, sha256Hex } from '../../shared/dust-wave-platform/packages/worker-core/src/crypto.js';
@@ -15,10 +16,10 @@ const ENTRY_FORM_VERSION = 'group-location-2026-11-04';
 const MAX_GROUP_SIZE = 8;
 const GENERIC = { ok: true, message: 'If this address can receive a link, check your email. Links may take a few minutes.' };
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
-const door = createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, siteLink, requireMail });
+const door = createDoor({ adminRole, configuredAdmin, normalizedEmail, rateLimit, bodyOf, audit, siteLink, requireMail });
+const adminAccess = createAdminAccess({ bodyOf, normalizedEmail, audit });
 
 function fail(message, status = 400, code = 'invalid_request') { throw new RequestValidationError(message, code, status); }
-function admins(env) { return String(env.ADMIN_EMAILS || '').split(',').map(normalizeEmail).filter(Boolean); }
 function settingsView(row, env) {
   return { registrationOpen: row.registration_open === 1 && mailReady(env), capacity: row.capacity, locked: Boolean(row.locked), revision: row.revision, heroMedia: row.hero_media || 'animation' };
 }
@@ -83,7 +84,7 @@ async function authenticate(request, env, kind, now) {
   const hash = await sha256Hex(value.slice(7));
   const token = await env.DB.prepare('SELECT subject FROM tokens WHERE hash=? AND kind=? AND expires_at>? AND consumed_at IS NULL')
     .bind(hash, kind, now).first();
-  if (!token || (kind === 'admin_session' && !admins(env).includes(token.subject))) fail('Sign in using a fresh email link.', 401, 'unauthorized');
+  if (!token || (kind === 'admin_session' && !await adminRole(env, token.subject))) fail('Sign in using a fresh email link.', 401, 'unauthorized');
   return token.subject;
 }
 function audit(env, action, actor, now, detail = {}) {
@@ -136,15 +137,15 @@ async function login(request, env, now) {
   requireMail(env);
   const email = normalizedEmail((await bodyOf(request)).email);
   await rateLimit(env, `admin-email:${email}`, 3, 60 * MINUTE, now);
-  if (admins(env).includes(email)) {
+  if (await adminRole(env, email)) {
     const token = randomToken();
     const hash = await sha256Hex(token);
     const expires = now + 15 * MINUTE;
     const job = await prepareMail(env, { kind: 'admin_link', key: hash, to: email,
       ...staffLinkEmail(siteLink(env, 'admin', token), 'organizer'), now, expiresAt: expires });
     await env.DB.batch([
-      env.DB.prepare("INSERT INTO tokens (hash,kind,subject,expires_at) VALUES (?,'admin_link',?,?)").bind(hash, email, expires),
-      mailStatement(env, job)
+      env.DB.prepare("INSERT INTO tokens (hash,kind,subject,expires_at) SELECT ?,'admin_link',?,? WHERE ?=1 OR EXISTS(SELECT 1 FROM admin_access WHERE email=? AND active=1)").bind(hash, email, expires, Number(configuredAdmin(env, email)), email),
+      mailStatement(env, job, "EXISTS(SELECT 1 FROM tokens WHERE hash=? AND kind='admin_link')", [hash])
     ]);
   }
   return GENERIC;
@@ -155,14 +156,14 @@ async function verify(request, env, now, role) {
   const hash = await sha256Hex(token);
   const source = await env.DB.prepare('SELECT subject FROM tokens WHERE hash=? AND kind=? AND consumed_at IS NULL AND expires_at>?')
     .bind(hash, `${role}_link`, now).first();
-  if (!source || (role === 'admin' && !admins(env).includes(source.subject))) fail('This link is invalid or expired.', 401, 'invalid_token');
+  if (!source || (role === 'admin' && !await adminRole(env, source.subject))) fail('This link is invalid or expired.', 401, 'invalid_token');
   const accessToken = randomToken();
   const sessionHash = await sha256Hex(accessToken);
   const sessionExpires = now + (role === 'admin' ? 2 * 60 * MINUTE : DAY);
   const eligible = role === 'entry' ? `AND EXISTS(SELECT 1 FROM entries WHERE id=tokens.subject AND
-    (verified_at IS NOT NULL OR (EXISTS(SELECT 1 FROM settings WHERE registration_open=1) AND NOT EXISTS(SELECT 1 FROM draw_preview))))` : '';
+    (verified_at IS NOT NULL OR (EXISTS(SELECT 1 FROM settings WHERE registration_open=1) AND NOT EXISTS(SELECT 1 FROM draw_preview))))` : 'AND (?=1 OR EXISTS(SELECT 1 FROM admin_access WHERE email=tokens.subject AND active=1))';
   const statements = [env.DB.prepare(`UPDATE tokens SET consumed_at=?,consumed_by=? WHERE hash=? AND kind=?
-    AND consumed_at IS NULL AND expires_at>? ${eligible}`).bind(now, sessionHash, hash, `${role}_link`, now)];
+    AND consumed_at IS NULL AND expires_at>? ${eligible}`).bind(now, sessionHash, hash, `${role}_link`, now, ...(role === 'admin' ? [Number(configuredAdmin(env, source.subject))] : []))];
   if (role === 'entry') statements.push(env.DB.prepare(`UPDATE entries SET verified_at=?,updated_at=? WHERE verified_at IS NULL
     AND id=(SELECT subject FROM tokens WHERE hash=? AND consumed_by=?)`).bind(now, now, hash, sessionHash));
   statements.push(env.DB.prepare(`INSERT INTO tokens (hash,kind,subject,expires_at)
@@ -373,10 +374,13 @@ export function createWorker(dependencies = {}) {
         else if (path === '/api/entries' && method === 'PATCH') payload = await updateEntry(request, env, await authenticate(request, env, 'entry_session', now), now);
         else if (path.startsWith('/api/admin/')) {
           const actor = await authenticate(request, env, 'admin_session', now);
-          if (method === 'GET' && path === '/api/admin/door') payload = await door.summary(env, now);
+          if (method === 'GET' && path === '/api/admin/session') payload = await adminIdentity(env, actor);
+          else if (method === 'GET' && path === '/api/admin/access') payload = await adminAccess.list(env, actor);
+          else if (method === 'POST' && path === '/api/admin/access') payload = await adminAccess.update(request, env, actor, now);
+          else if (method === 'GET' && path === '/api/admin/door') payload = await door.summary(env, now);
           else if (method === 'PATCH' && path === '/api/admin/door') payload = await door.updateSettings(request, env, actor, now);
           else if (method === 'POST' && path === '/api/admin/volunteers') payload = await door.updateStaff(request, env, actor, now);
-          else if (method === 'GET' && path === '/api/admin/entries') payload = await adminEntries(env, url);
+          else if (method === 'GET' && path === '/api/admin/entries') payload = { ...await adminEntries(env, url), viewer: await adminIdentity(env, actor) };
           else if (method === 'GET' && path === '/api/admin/entries.csv') return reply(request, env, await exportEntries(env), 200, 'text/csv; charset=utf-8');
           else if (method === 'PATCH' && path === '/api/admin/settings') payload = await updateSettings(request, env, actor, now);
           else if (method === 'PATCH' && path === '/api/admin/display') payload = await updateDisplay(request, env, actor, now);

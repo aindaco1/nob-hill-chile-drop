@@ -38,6 +38,7 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Private entry page | [`entry.html`](../entry.html), [`assets/js/manage-entry.js`](../assets/js/manage-entry.js) |
 | Group passes and volunteer door | [`api/src/tickets.js`](../api/src/tickets.js), [`api/src/door.js`](../api/src/door.js), [`pass.html`](../pass.html), [`check-in.html`](../check-in.html), `assets/js/pass.js`, `check-in.js`, `admin-door.js`; [behavior and API](CHECK_IN.md) |
 | Organizer UI | [`admin.html`](../admin.html), [`assets/js/admin.js`](../assets/js/admin.js) |
+| Organizer access management | [`api/src/admin-access.js`](../api/src/admin-access.js), [`_includes/admin-access.html`](../_includes/admin-access.html), [`assets/js/admin-access.js`](../assets/js/admin-access.js) |
 | Browser API wrapper, token handling, status helpers | [`assets/js/api.js`](../assets/js/api.js) |
 | Public rules and privacy notice | [`drawing-rules.html`](../drawing-rules.html), [`hot-spot-rules.html`](../hot-spot-rules.html), [`privacy.html`](../privacy.html) |
 | Canonical illustration | [`assets/art/chile-sign.svg`](../assets/art/chile-sign.svg) |
@@ -62,7 +63,7 @@ The submodule at `shared/dust-wave-platform` is pinned by Git and [platform.json
 | `design-core` | Layout/design mixins |
 | `build-core` | CSS/JS asset minification |
 | `test-core` | Consumer-pin and browser rendering assertions |
-| `admin-shell` | Browser API client |
+| `admin-shell` | Browser API client and accessible confirmation-dialog control; event-specific roles, routes and authorization remain here |
 | `worker-core` | Email normalization, tokens/hashes, bounded request/response parsing, email preparation, outbox IDs/retries and Resend failure classification |
 
 `npm run build` first copies font files/licenses and the shared navigation/API modules, then generates `event.ics`, builds Jekyll into `_site`, and minifies assets there. These copied outputs are ignored by Git. The social PNG is a separate, explicit render step and is committed when updated. Edit the source SVG, not the generated image, for art changes.
@@ -78,6 +79,7 @@ The schema supports **one event and one drawing**. SQL timestamps are epoch mill
 | `settings` | Singleton `id=1`; registration flag, capacity 1–2000, revision and `hero_media` (`animation` or `channel26`). Display updates do not advance the drawing revision. |
 | `entries` | UUID, unique normalized email, name, group size, nullable city/state-province/country, rules consent version, nullable media-consent version/time, creation/update/verification/deletion timestamps. New entries and owner edits require location and a group size of 1–8. Legacy rows keep null location until supplied by the owner, and null media consent until the owner explicitly agrees during an edit. |
 | `tokens` | SHA-256 hashes of link/session tokens, type, subject, expiration and single-use consumption state |
+| `admin_access` | Normalized organizer email, active flag and update time; additive migration 0005. Super-admin and protected legacy identities remain in Worker configuration. |
 | `rate_limits` | Hashed identity/time buckets and counts; no raw IP/email key |
 | `draw_preview` | Singleton immutable UUID, capacity, captured revision and ranked results JSON |
 | `drawing` | Singleton committed preview reference and optional publication time |
@@ -95,7 +97,7 @@ See [Drawing](DRAWING.md) for post-preparation erasure: rank/size remain while p
 
 Links carry random tokens in URL fragments (`#token=…`). Browser code removes the fragment before exchanging the token; the server stores token hashes. Successful exchange creates a role-specific Bearer session saved in `sessionStorage`, never a cookie or persistent `localStorage`. UI sign-out clears the browser copy; it does not revoke the server token before expiry. Do not introduce third-party scripts on private token pages.
 
-Allowed origins are exact origins, not URL prefixes. Private GETs also require an allowed `Origin` header. Bearer auth and the admin allowlist protect private records; CORS alone does not. All projects on `https://aindaco1.github.io` share an origin, so the project path is not a security boundary.
+Allowed origins are exact origins, not URL prefixes. Private GETs also require an allowed `Origin` header. Bearer auth and current configured/database organizer membership protect private records; CORS alone does not. Super-admin-only roster operations check the configured super-admin identities on the server. All projects on `https://aindaco1.github.io` share an origin, so the project path is not a security boundary.
 
 Entry names/status text are rendered with `textContent`; CSV cells neutralize leading spreadsheet formulas. The API bounds JSON bodies and returns private/no-store responses with noindex and no-referrer headers. Mail payloads use AES-GCM with the job ID authenticated as associated data. Encryption protects queued payloads, not every database column: entry names/emails are available to authorized administration.
 

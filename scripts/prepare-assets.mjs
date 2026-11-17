@@ -13,6 +13,7 @@ for (const family of ['barlow-condensed', 'dm-sans']) {
 }
 await copyFile('shared/dust-wave-platform/packages/site-shell/src/header-nav-browser.js', 'assets/js/header-nav.js');
 await copyFile('shared/dust-wave-platform/packages/admin-shell/src/api-client.js', 'assets/js/api-client.js');
+await copyFile('shared/dust-wave-platform/packages/admin-shell/src/confirmation-dialog.js', 'assets/js/confirmation-dialog.js');
 await copyFile('node_modules/qrcode-generator/dist/qrcode.mjs', 'assets/js/qr-code.js');
 await build({ entryPoints: ['node_modules/jsqr/dist/jsQR.js'], bundle: true, format: 'esm', minify: true, outfile: 'assets/js/qr-reader.js' });
 await mkdir('assets/vendor-licenses', { recursive: true });

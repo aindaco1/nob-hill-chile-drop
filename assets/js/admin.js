@@ -1,4 +1,5 @@
 import { setupDoorAdmin } from './admin-door.js';
+import { setupAdminAccess } from './admin-access.js';
 import { request, status, message, takeLinkToken, withSubmit } from './api.js';
 (async () => {
 const find = selector => document.querySelector(selector);
@@ -11,11 +12,13 @@ const key = 'chile-drop-admin-session';
 let session = sessionStorage.getItem(key) || '';
 let snapshot, offset = 0;
 const doorAdmin = setupDoorAdmin(() => session);
+const adminAccess = setupAdminAccess(() => session);
 const token = takeLinkToken();
-function signout() {sessionStorage.removeItem(key);session='';snapshot=null;dashboard.hidden=true;login.hidden=false;}
+function signout() {sessionStorage.removeItem(key);session='';snapshot=null;adminAccess.setViewer(null);dashboard.hidden=true;login.hidden=false;}
 function stat(label, value) {const box=document.createElement('div');box.className='dashboard-stat';const number=document.createElement('strong');number.textContent=value;const text=document.createElement('span');text.textContent=label;box.append(number,text);return box;}
 function render(data) {
   snapshot=data; dashboard.hidden=false;login.hidden=true;
+  adminAccess.setViewer(data.viewer);
   find('[data-stats]').replaceChildren(stat('Verified groups',data.counts.verifiedOrders),stat('Guests in verified groups',data.counts.verifiedPeople),stat('Total groups',data.counts.totalOrders));
   settingsForm.elements.capacity.value=data.settings.capacity;
   settingsForm.elements.registrationOpen.checked=data.settings.registrationOpen;
@@ -40,10 +43,8 @@ function render(data) {
   const emailCounts=Object.entries(emailLabels).filter(([state])=>data.outbox[state]>0).map(([state,label])=>`${data.outbox[state].toLocaleString('en-US')} ${label}`);
   find('[data-email-summary]').textContent=emailCounts.length?`Email status: ${emailCounts.join('; ')}.`:'No emails queued or sent yet.';
 }
-async function refresh(){try{render(await request(`/api/admin/entries?limit=50&offset=${offset}`,{},session));await doorAdmin.refresh();}catch(error){if(error.status===401)signout();throw error;}}
+async function refresh(){const current=session;try{const data=await request(`/api/admin/entries?limit=50&offset=${offset}`,{},current);if(!session||session!==current)return;render(data);await Promise.all([doorAdmin.refresh(),adminAccess.refresh()]);}catch(error){if(session!==current)return;if(error.status===401)signout();throw error;}}
 async function action(button,run){button.disabled=true;try{await run();await refresh();}catch(error){status(feedback,message(error),'error');feedback.focus();}finally{button.disabled=false;if(snapshot)render(snapshot);}}
-if(token){status(feedback,'Confirming organizer sign-in…');try{const data=await request('/api/admin/verify',{method:'POST',body:{token}});session=data.accessToken;sessionStorage.setItem(key,session);await refresh();status(feedback,'Signed in. No drawing or email publication happens automatically.','success');}catch(error){signout();status(feedback,message(error),'error');}}
-else if(session){try{await refresh();}catch(error){status(feedback,message(error),'error');}}
 login.addEventListener('submit',event=>{event.preventDefault();withSubmit(login,async()=>{try{await request('/api/admin/login',{method:'POST',body:{email:login.elements.email.value}});status(feedback,'If this is an authorized organizer email, a sign-in link will arrive shortly.','success');}catch(error){status(feedback,message(error),'error');}});});
 settingsForm.addEventListener('submit',event=>{event.preventDefault();withSubmit(settingsForm,async()=>{try{await request('/api/admin/settings',{method:'PATCH',body:{registrationOpen:settingsForm.elements.registrationOpen.checked,capacity:Number(settingsForm.elements.capacity.value)}},session);await refresh();status(feedback,'Registration settings saved.','success');}catch(error){status(feedback,message(error),'error');}});});
 displayForm.addEventListener('submit', event => {
@@ -69,5 +70,8 @@ find('[data-publish]').addEventListener('click',event=>action(event.currentTarge
 find('[data-export]').addEventListener('click',event=>action(event.currentTarget,async()=>{const csv=await request('/api/admin/entries.csv',{},session);const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='chile-drop-entries.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status(feedback,'Private guest CSV exported. Store it securely.','success');}));
 find('[data-previous]').addEventListener('click',event=>action(event.currentTarget,async()=>{offset=Math.max(0,offset-50);}));
 find('[data-next]').addEventListener('click',event=>action(event.currentTarget,async()=>{offset+=50;}));
+
+if(token){status(feedback,'Confirming organizer sign-in…');try{const data=await request('/api/admin/verify',{method:'POST',body:{token}});session=data.accessToken;sessionStorage.setItem(key,session);await refresh();if(session===data.accessToken)status(feedback,'Signed in. No drawing or email publication happens automatically.','success');}catch(error){signout();status(feedback,message(error),'error');}}
+else if(session){try{await refresh();}catch(error){status(feedback,message(error),'error');}}
 
 })();

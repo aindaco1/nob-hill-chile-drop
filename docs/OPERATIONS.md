@@ -24,7 +24,8 @@ Resource IDs and URLs are identifiers, not secrets. Recheck the live account/bin
 | `_config.yml`: `preview` | Indexing flag; true currently emits noindex |
 | Worker `ALLOWED_ORIGINS` | Comma-separated exact origins: `https://chiledrop.com`, `https://www.chiledrop.com`, and temporarily `https://aindaco1.github.io` |
 | Worker `PUBLIC_SITE_URL` | `https://chiledrop.com`; used in emailed access and group QR links |
-| Worker `ADMIN_EMAILS` | Comma-separated organizer allowlist; currently `alonso@dustwave.xyz` |
+| Worker `ADMIN_EMAILS` | Protected legacy organizer allowlist; currently `alonso@dustwave.xyz` |
+| Secret `SUPER_ADMIN_EMAILS` | Comma-separated protected super-admin identities; privately provisioned, not published in source |
 | Worker `REPORT_EMAIL` | Weekly report destination and reply-to; currently the same organizer |
 | Worker `EMAIL_FROM` | Verified sender identity |
 | Secret `RESEND_API_KEY` | Provider credential; never in Git/Pages |
@@ -112,6 +113,22 @@ Keep the additive columns on rollback. A rollback of only the Worker hides the n
 6. After release, organizers configure volunteer emails and the cutoff and explicitly open check-in at the appropriate time. Actual email delivery and physical-phone camera/re-entry/capacity procedures require a separate authorized rehearsal.
 
 Rollback retains the additive tables and signing key. Before any new results jobs or admissions exist, an old Worker remains compatible with the unchanged existing tables. Once `waitlist` jobs, issued QR codes or admissions exist, rolling back to an old Worker can fail to materialize new jobs and disables ticket/door routes; prefer a forward fix or keep the door closed while resolving. Never reset the drawing, delete admissions, rotate the signing key, or restore a stale database to make old code appear compatible. Existing frozen/attempted mail payloads must remain unchanged.
+
+## Organizer access management
+
+Super admins sign in at the same organizer page with their own email. **Admin access** lists active admins, accepts new email addresses and confirms removals using the shared Platform dialog. Ordinary admins retain all existing organizer/drawing permissions but cannot read or change this roster. Adding an admin does not send an invitation; share the organizer sign-in URL separately if requested. Protected configured accounts cannot be removed or promoted in this interface. Keep super-admin identities out of public docs and provision `SUPER_ADMIN_EMAILS` privately as a Worker secret.
+
+Release procedure for migration `0005_admin_access.sql`:
+
+1. Run `npm test` and `npm run api:check`. Inspect role-denial, revocation, race and migration-preservation evidence. Platform remains pinned; the copied confirmation control comes from that exact pin.
+2. Inspect live Worker identity, bindings, schedules, public config and pending migrations. Export D1 to protected storage outside the repository and restore the export into isolated SQLite to check integrity before applying the additive migration.
+3. Apply only migration 0005 to the existing D1. It creates an empty `admin_access` table and changes no existing rows. Provision the explicitly authorized super-admin secret, preserving all existing secret values and variables. Do not add personal administrator addresses to the migration, static assets or public repository.
+4. Deploy the reviewed Worker before the new Pages interface, then provision only the specifically approved ordinary-admin memberships. Use parameterized statements against the new table for an initial authorized deployment, recording a private audit event; routine later changes use the super-admin dashboard. Do not run registration/login/drawing/mail actions as smoke tests.
+5. Verify exact Worker/Pages revisions, protected settings and private expected memberships. Isolated tests establish role workflows; real inbox delivery requires a separately authorized check.
+
+Removal revokes existing organizer and check-in links/sessions for that address. Independent volunteer access is unchanged; it can permit a fresh volunteer login. Frozen/pending mail is preserved, so a revoked link may still be delivered but cannot be exchanged. In-flight authorized operations can complete; later requests recheck access. Protected accounts are managed through controlled configuration changes, not the dashboard.
+
+Rollback keeps the additive table and existing data. An older Worker recognizes only the legacy `ADMIN_EMAILS` allowlist, so it temporarily disables database admins and super-admin management; it does not erase them. Prefer a forward fix. Do not copy the private roster into public config, drop the table, restore stale guest data, rotate keys or reset mail as a rollback step.
 
 ## Email queue and recovery
 

@@ -208,3 +208,7 @@ h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
 .volunteer-list span,[data-door-identity]{overflow-wrap:anywhere;min-width:0}
 [data-door-admin] input[type=datetime-local]{max-width:100%;min-width:0}
 @media print{.pass-page~*,.site-header,.site-footer,.skip-link{display:none}.group-pass{break-inside:avoid}}
+
+// Event styling for the shared Platform confirmation control and admin roster.
+.admin-access-list{list-style:none;padding:0;display:grid;gap:1rem}.admin-access-list li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding-block:1rem;border-bottom:1px solid var(--line)}.admin-access-list li>div{min-width:0;flex:1 1 14rem;overflow-wrap:anywhere}.admin-access-list strong,.admin-access-list span{display:block}.admin-access-list .button{flex:0 0 auto}
+.dw-admin-dialog{max-width:min(36rem,calc(100% - 2rem));max-height:calc(100% - 2rem);padding:clamp(.75rem,4vw,1.5rem);border:1px solid var(--lime);background:var(--ink);color:var(--white);overflow-wrap:anywhere}.dw-admin-dialog::backdrop{background:rgba(0,0,0,.75)}.dw-admin-dialog__surface{display:grid;gap:1.25rem}.dw-admin-dialog h2{font-size:clamp(1.75rem,5vw,2.75rem)}.dw-admin-dialog__actions{display:flex;gap:1rem;flex-wrap:wrap}.dw-admin-dialog button{flex:1 1 10rem;min-width:0;min-height:52px;padding:.75rem .5rem;border:1px solid currentColor;border-radius:3px;background:transparent;color:var(--white);font:inherit}.dw-admin-dialog .btn-danger{background:var(--red);color:var(--ink)}

@@ -62,6 +62,9 @@ An entry object contains `id`, `name`, `email`, `groupSize`, `verified`, `status
 | --- | --- | --- | --- |
 | `POST /api/admin/login` | Origin | `{email}` | 202 generic acknowledgment; only allowlisted emails receive a link |
 | `POST /api/admin/verify` | Origin | `{token}` | 200 `{accessToken, expiresAt}` |
+| `GET /api/admin/session` | Admin Bearer + Origin | — | 200 `{email, role, canManageAdmins}` |
+| `GET /api/admin/access` | Super-admin Bearer + Origin | — | 200 `{admins: [{email, role, protected}]}` |
+| `POST /api/admin/access` | Super-admin Bearer + Origin | `{email, active: boolean}`; no other fields | 200 current admin list; adds/reactivates or revokes ordinary admin access |
 | `GET /api/admin/entries` | Admin Bearer + Origin | `limit` 1–200, default 50; `offset` ≥0, default 0; both integers | 200 dashboard snapshot |
 | `GET /api/admin/entries.csv` | Admin Bearer + Origin | — | 200 private `text/csv` attachment |
 | `PATCH /api/admin/settings` | Admin Bearer + Origin | `{registrationOpen?: boolean, capacity?: integer}`; at least one field | 200 `{settings}`; immutable once prepared |
@@ -75,6 +78,7 @@ Display changes update only `settings.hero_media` and add a `display_updated` au
 
 The dashboard snapshot contains:
 
+- `viewer`: `{email, role, canManageAdmins}` for the authenticated organizer. This controls presentation only; the Worker independently checks every management request.
 - `entries`: page of `{id, name, email, groupSize, verified, createdAt, status, rank}`, newest first; rank may be null.
 - `total`, `counts`: total orders/people and verified orders/people. “Orders” is the internal name for group entries, not purchases.
 - `settings`: the same effective registration/capacity/lock/revision view as public config.
@@ -85,6 +89,10 @@ The dashboard snapshot contains:
 The preview response includes `previewId`, `createdAt`, `capacity`, `eligibleOrders`, `selectedOrders`, `selectedPeople`, `waitlistedOrders`, `waitlistedPeople`, `unusedCapacity`, and private `results`. Each result includes `entryId`, `rank`, `status`, `groupSize`, `name`, `email`. Repeating preview returns the saved result; it does not reroll. Admin result visibility is independent of guest publication.
 
 ## Token lifetimes and limits
+
+Organizer access is the union of protected `ADMIN_EMAILS`, protected `SUPER_ADMIN_EMAILS` and active `admin_access` rows. Only `SUPER_ADMIN_EMAILS` grants `super_admin`; all other organizers have role `admin`. Missing super-admin configuration grants no management authority. Email normalization applies before lookup and updates. Roles cannot be assigned in a request body. Regular admins receive 403 `admin_access_forbidden` for roster reads or writes; attempts to change a protected account receive 409 `protected_admin`.
+
+The roster contains active accounts only. Add/reactivate is idempotent and sends no email. Removal deactivates the row and deletes organizer links/sessions and door links/sessions for that email in the same database batch, with an audit event containing a target-email hash. A later re-add does not revive deleted tokens. Pending mail is not rewritten or resent; old links may still arrive but cannot sign in. Separate volunteer approval remains independent. Role checks happen on login, exchange and each authenticated request; dynamic membership is also checked in token-creation/exchange and check-in SQL guards. Already-authorized in-flight operations may finish.
 
 | Credential | Lifetime | Behavior |
 | --- | --- | --- |

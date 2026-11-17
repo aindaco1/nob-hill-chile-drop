@@ -1,0 +1,12 @@
+<section class="dashboard-panel" data-admin-access hidden aria-labelledby="admin-access-heading">
+  <h2 id="admin-access-heading">Admin access</h2>
+  <p>Admins can manage entries, registration, drawing results and volunteer access. Only a super admin can add or remove admins.</p>
+  <form class="form-stack" data-admin-access-form>
+    <label class="field" for="new-admin-email">New admin email<input id="new-admin-email" type="email" name="email" maxlength="254" autocomplete="off" required></label>
+    <button type="submit" class="button button--lime">Add admin</button>
+  </form>
+  <p class="form-status" data-admin-access-status role="status" tabindex="-1"></p>
+  <ul class="admin-access-list" data-admin-access-list aria-label="Current admins"></ul>
+  <p class="small muted">New admins sign in through this organizer page using their own email. Protected accounts cannot be removed here.</p>
+  <div data-admin-access-dialog></div>
+</section>

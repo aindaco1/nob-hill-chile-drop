@@ -57,6 +57,7 @@ assets/fonts/*.woff2
 assets/fonts/OFL-*.txt
 assets/js/header-nav.js
 assets/js/api-client.js
+assets/js/confirmation-dialog.js
 event.ics
 work/
 api/.wrangler/

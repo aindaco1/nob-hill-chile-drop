@@ -35,7 +35,7 @@ One place remains unused. Every group has an equal chance at each rank, but uneq
 
 ## Organizer workflow
 
-The [organizer desk](https://chiledrop.com/admin/) uses the email allowlist in Worker configuration. Currently the organizer and report recipient are `alonso@dustwave.xyz`. Requesting a login link sends email; do not use it for unattended smoke tests.
+The [organizer desk](https://chiledrop.com/admin/) accepts protected configured organizers and active database admins. Super admins also see **Admin access**, where they can add or remove ordinary admins. Existing configured organizer access and the report destination (`alonso@dustwave.xyz`) remain protected. New admins use their own email to request a sign-in link; adding access does not send an invitation. Requesting a login link sends email; do not use it for unattended smoke tests. See [access management and release](OPERATIONS.md#organizer-access-management).
 
 | Step | Action and consequence |
 | --- | --- |

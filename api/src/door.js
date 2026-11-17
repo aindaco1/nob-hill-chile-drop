@@ -9,10 +9,10 @@ const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const MINUTE = 60_000;
 
-export function createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, siteLink, requireMail }) {
+export function createDoor({ adminRole, configuredAdmin, normalizedEmail, rateLimit, bodyOf, audit, siteLink, requireMail }) {
   const config = env => env.DB.prepare('SELECT * FROM door_settings WHERE id=1').first();
   async function allowed(env, email) {
-    return admins(env).includes(email) || Boolean(await env.DB.prepare('SELECT 1 FROM door_staff WHERE email=? AND active=1').bind(email).first());
+    return Boolean(await adminRole(env, email)) || Boolean(await env.DB.prepare('SELECT 1 FROM door_staff WHERE email=? AND active=1').bind(email).first());
   }
   async function authenticate(request, env, now) {
     const bearer = request.headers.get('authorization') || '';
@@ -23,7 +23,7 @@ export function createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, 
     if (token && await allowed(env, token.email)) return { email: token.email, hash, table: 'door_tokens' };
     const admin = await env.DB.prepare("SELECT subject FROM tokens WHERE hash=? AND kind='admin_session' AND expires_at>? AND consumed_at IS NULL")
       .bind(hash, now).first();
-    if (admin && admins(env).includes(admin.subject)) return { email: admin.subject, hash, table: 'tokens' };
+    if (admin && await adminRole(env, admin.subject)) return { email: admin.subject, hash, table: 'tokens' };
     fail('Your volunteer sign-in expired or access was removed. Sign in again.', 401, 'unauthorized');
   }
   function view(row, now) {
@@ -53,7 +53,7 @@ export function createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, 
     const body = await bodyOf(request);
     const email = normalizedEmail(body.email);
     if (typeof body.active !== 'boolean' || Object.keys(body).some(key => !['email','active'].includes(key))) fail('Choose whether volunteer access is active.');
-    if (admins(env).includes(email)) fail('Organizer access is managed separately from volunteer access.');
+    if (await adminRole(env, email)) fail('Organizer access is managed separately from volunteer access.');
     await env.DB.batch([
       env.DB.prepare('INSERT INTO door_staff(email,active,updated_at) VALUES(?,?,?) ON CONFLICT(email) DO UPDATE SET active=excluded.active,updated_at=excluded.updated_at')
         .bind(email, Number(body.active), now),
@@ -70,7 +70,10 @@ export function createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, 
       const token = randomToken(); const hash = await sha256Hex(token); const expires = now + 15 * MINUTE;
       const job = await prepareMail(env, { kind: 'door_link', key: hash, to: email, now, expiresAt: expires,
         ...staffLinkEmail(siteLink(env, 'check-in', token), 'volunteer') });
-      await env.DB.batch([env.DB.prepare("INSERT INTO door_tokens(hash,kind,email,expires_at) VALUES(?,'link',?,?)").bind(hash, email, expires), mailStatement(env, job)]);
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO door_tokens(hash,kind,email,expires_at) SELECT ?,'link',?,? WHERE ?=1 OR EXISTS(SELECT 1 FROM admin_access WHERE email=? AND active=1) OR EXISTS(SELECT 1 FROM door_staff WHERE email=? AND active=1)").bind(hash, email, expires, Number(configuredAdmin(env, email)), email, email),
+        mailStatement(env, job, "EXISTS(SELECT 1 FROM door_tokens WHERE hash=? AND kind='link')", [hash])
+      ]);
     }
     return { ok: true, message: 'If your email has volunteer access, a sign-in link will arrive shortly.' };
   }
@@ -83,7 +86,7 @@ export function createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, 
     const accessToken = randomToken(); const sessionHash = await sha256Hex(accessToken); const expires = now + 12 * 60 * MINUTE;
     await env.DB.batch([
       env.DB.prepare(`UPDATE door_tokens SET consumed_at=?,consumed_by=? WHERE hash=? AND kind='link' AND consumed_at IS NULL AND expires_at>?
-        AND (?=1 OR EXISTS(SELECT 1 FROM door_staff WHERE email=door_tokens.email AND active=1))`).bind(now, sessionHash, hash, now, Number(admins(env).includes(row.email))),
+        AND (?=1 OR EXISTS(SELECT 1 FROM admin_access WHERE email=door_tokens.email AND active=1) OR EXISTS(SELECT 1 FROM door_staff WHERE email=door_tokens.email AND active=1))`).bind(now, sessionHash, hash, now, Number(configuredAdmin(env, row.email))),
       env.DB.prepare(`INSERT INTO door_tokens(hash,kind,email,expires_at) SELECT ?,'session',email,? FROM door_tokens WHERE hash=? AND consumed_by=?`).bind(sessionHash, expires, hash, sessionHash)
     ]);
     if (!await env.DB.prepare('SELECT 1 FROM door_tokens WHERE hash=?').bind(sessionHash).first()) fail('This volunteer link was already used.', 401, 'invalid_token');
@@ -97,7 +100,7 @@ export function createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, 
     const body = await bodyOf(request);
     if (!UUID.test(body.requestId || '') || body.wholeGroupPresent !== true || body.spaceConfirmed !== true || !Number.isSafeInteger(body.revision)) fail('Confirm that the whole group is present and there is room for everyone.');
     const row = await ticketRecord(env, body.ticket);
-    const isAdmin = Number(admins(env).includes(actor.email));
+    const isAdmin = Number(configuredAdmin(env, actor.email));
     // One row per group and the guarded INSERT are the authority across phones and retries.
     const result = await env.DB.batch([
       env.DB.prepare(`INSERT OR IGNORE INTO admissions(entry_id,group_size,admitted_at,actor,request_id,kind)
@@ -105,8 +108,8 @@ export function createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, 
         FROM entries e JOIN results r ON r.entry_id=e.id,door_settings s,drawing d
         WHERE e.id=? AND e.deleted_at IS NULL AND e.verified_at IS NOT NULL AND s.id=1 AND d.id=1 AND d.published_at IS NOT NULL
         AND s.admission_open=1 AND s.revision=? AND (r.status='selected' OR (s.selected_cutoff_at IS NOT NULL AND s.selected_cutoff_at<=?))
-        AND (?=1 OR EXISTS(SELECT 1 FROM door_staff WHERE email=? AND active=1))`)
-        .bind(now, actor.email, body.requestId, now, row.id, body.revision, now, isAdmin, actor.email),
+        AND (?=1 OR EXISTS(SELECT 1 FROM admin_access WHERE email=? AND active=1) OR EXISTS(SELECT 1 FROM door_staff WHERE email=? AND active=1))`)
+        .bind(now, actor.email, body.requestId, now, row.id, body.revision, now, isAdmin, actor.email, actor.email),
       env.DB.prepare(`INSERT INTO audit(action,actor,created_at,detail) SELECT 'group_admitted',?,?,?
         WHERE EXISTS(SELECT 1 FROM admissions WHERE entry_id=? AND request_id=?)
         AND NOT EXISTS(SELECT 1 FROM audit WHERE action='group_admitted' AND json_extract(detail,'$.requestId')=?)`)
