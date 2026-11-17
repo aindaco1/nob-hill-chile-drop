@@ -289,7 +289,9 @@ test('photographic chiles fall vertically and share pause state across the page'
   const start=await drop.boundingBox();
   await expect.poll(async()=>{const next=await drop.boundingBox();expect(Math.abs(next.x-start.x)).toBeLessThan(.1);return next.y-start.y;}).toBeGreaterThan(3);
   await page.getByRole('button',{name:'Pause animation',exact:true}).click();
-  const time=await drop.evaluate(el=>el.getAnimations()[0].currentTime);
+  await expect.poll(()=>drop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
+  // Wait for the compositor's pending pause before recording the frozen frame.
+  const time=await drop.evaluate(async el=>{const animation=el.getAnimations()[0];await animation.ready;return animation.currentTime;});
   await footer.scrollIntoViewIfNeeded();
   await expect.poll(()=>footerDrop.evaluate(el=>el.getAnimations()[0]?.playState)).toBe('paused');
   await expect(page.getByRole('button',{name:'Resume animations',exact:true})).toBeVisible();
