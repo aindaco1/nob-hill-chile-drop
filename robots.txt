@@ -3,8 +3,5 @@ layout: null
 ---
 User-agent: *
 {% if site.preview %}Disallow: /
-
-{% assign preview_bots = 'facebookexternalhit,Facebot,Twitterbot,LinkedInBot,Slackbot-LinkExpanding,Discordbot,TelegramBot,WhatsApp' | split: ',' %}{% for bot in preview_bots %}User-agent: {{ bot }}
-{% endfor %}Allow: /
 {% else %}Allow: /
 Sitemap: {{ '/sitemap.xml' | absolute_url }}{% endif %}

@@ -5,7 +5,7 @@ baseurl: ""
 legacy_site_base: https://aindaco1.github.io/nob-hill-chile-drop/
 lang: en-US
 asset_version: "20261117-5"
-preview: true
+preview: false
 theme: null
 api_base: https://nob-hill-chile-drop-api.jogo.workers.dev
 markdown: kramdown

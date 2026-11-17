@@ -418,11 +418,18 @@ test('server-rendered share metadata uses the live PNG while the shared browser 
   await page.clock.fastForward(1000);await expect(page.locator('[data-time=seconds]')).toHaveText('04');
 });
 
-test('preview robots policy permits link previews while keeping general crawlers blocked and noindex',async({page,request})=>{
+test('public pages allow crawling and indexing while private pages stay noindex and outside the sitemap',async({page,request})=>{
   const robots=await (await request.get('robots.txt')).text();
-  const groups=robots.trim().split(/\n\s*\n/);
-  expect(groups[0]).toMatch(/User-agent: \*\s+Disallow: \//);
-  for(const bot of ['facebookexternalhit','Twitterbot','LinkedInBot','Slackbot-LinkExpanding','Discordbot','TelegramBot','WhatsApp'])expect(groups[1]).toContain(`User-agent: ${bot}\n`);
-  expect(groups[1]).toMatch(/Allow: \/\s*$/);expect(groups[1]).not.toMatch(/Googlebot|Bingbot|meta-externalagent|GPTBot|User-agent: \*/);
-  await mock(page);await page.goto('./');await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content','noindex,follow');
+  expect(robots).toMatch(/User-agent: \*\s+Allow: \//);
+  expect(robots).not.toContain('Disallow:');expect(robots).toContain('Sitemap: https://chiledrop.com/sitemap.xml');
+  const xml=await (await request.get('sitemap.xml')).text();
+  const urls=[...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match=>match[1]).sort();
+  expect(urls).toEqual(['','drawing-rules/','hot-spot-rules/','privacy/'].map(path=>`https://chiledrop.com/${path}`).sort());
+  await mock(page);
+  for(const path of ['./','drawing-rules/','hot-spot-rules/','privacy/']){
+    await page.goto(path);await expect(page.locator('meta[name="robots"][content*="noindex"]')).toHaveCount(0);
+  }
+  for(const path of ['admin/','entry/','pass/','check-in/']){
+    await page.goto(path);await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content','noindex,follow');
+  }
 });

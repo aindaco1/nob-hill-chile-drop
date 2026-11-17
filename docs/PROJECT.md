@@ -53,7 +53,7 @@ The entry and owner-edit forms offer only 1–8 in a native group-size dropdown.
 - The matching red chile cursor is limited to fine mouse pointers. Native cursor behavior remains for inputs, keyboard/touch use, reduced motion and forced colors.
 - No top announcement bar; drawing rules are linked in the footer. Alcohol sales and hours are prominent in the Hot Spot section.
 - Footage is conditional on an approved `film.youtube_id`; the empty section stays hidden. The YouTube player loads only after a click.
-- `preview: true` currently emits noindex. The site is publicly accessible; noindex is not access control.
+- `preview: false` allows crawling and indexing of public event/rules/privacy pages. Entry management, admin, passes and check-in remain `private_page: true` with noindex and are excluded from the sitemap. Noindex is not access control.
 
 Visual reference: [event Instagram](https://www.instagram.com/nobhillchiledrop/). Information-structure reference: [One Times Square](https://onetimessquare.com/nye-ball). These references do not establish this event's schedule or grant rights to reuse their media.
 
@@ -79,7 +79,7 @@ Organizer access now has two roles: admins retain the existing entry, drawing, e
 
 ## Remaining decisions and limitations
 
-On November 7, the organizer deferred the items below until later. Keep the current registration, door, indexing, domain and retention settings until separately directed. These are a handoff list, not authorization to implement or publish them automatically.
+On November 7, the organizer deferred the items below until later. Keep the current registration, door and retention settings until separately directed. Domain cutover and public indexing were subsequently authorized November 17. These are a handoff list, not authorization to implement or publish them automatically.
 
 | Item | What is still needed |
 | --- | --- |
@@ -87,7 +87,7 @@ On November 7, the organizer deferred the items below until later. Keep the curr
 | Arrival and admission fulfillment | Check-in location and final door staffing; QR passes, together-only group arrival, restricted volunteer check-in and organizer-set cutoff are deployed; see [Check-in](CHECK_IN.md) |
 | Visitor logistics | Approved public viewing map, parking, street closures/access, accessible routes/restrooms and bag rules |
 | Approved footage | A usable video and confirmed permission; no placeholder footage is presented as real |
-| Final public launch | Organizer decision on indexing and final logistics; domain cutover separately authorized November 17 |
+| Final visitor logistics | Approved information remains pending; domain cutover and public SEO indexing were authorized November 17 |
 | Waitlist | Volunteers may admit whole waitlisted groups at the door after the reservation cutoff when space permits; no automatic promotion, cancellation/reallocation or second drawing workflow |
 | Data retention | Organizer-approved retention/deletion schedule; there is no automatic campaign-wide purge |
 | Mail observability | Provider acceptance is recorded; no delivery/bounce webhook or automatic inbox-delivery confirmation |
@@ -140,6 +140,6 @@ The starting ZEMA Landing structure was taken from commit `ea02ebc8594569cdeee35
 
 Social previews use a 1200×630 Worker-generated PNG showing days, hours, minutes and seconds until the existing midnight Mountain Time drop. It is a timestamped snapshot when a crawler fetches the image, not an animated clock within an existing post. At midnight the image changes to “Happy New Year, Albuquerque!” Existing shares may retain the social platform's cached image.
 
-The design reuses the chile artwork and brand fonts. The website and image share countdown arithmetic; `_data/event.yml` owns the date/time and public event details. Pool's resvg PNG pattern is reused without campaign storage or financial logic. A timeless image from the same template is the failure fallback. Registration, drawing, indexing and event operations are unchanged.
+The design reuses the chile artwork and brand fonts. The website and image share countdown arithmetic; `_data/event.yml` owns the date/time and public event details. Pool's resvg PNG pattern is reused without campaign storage or financial logic. A timeless image from the same template is the failure fallback. Registration, drawing and event operations are unchanged.
 
-Preview mode retains general crawler blocking and noindex metadata. A specific robots group permits named social link-preview bots so they can fetch share metadata; this does not enable general search indexing.
+The organizer subsequently authorized public SEO crawling and indexing. Preview mode is disabled: robots.txt allows all crawlers and advertises the sitemap. The sitemap derives public pages from their metadata; private entry/admin/pass/check-in pages retain noindex and are omitted. This supersedes the temporary social-crawler-only exception and the earlier indexing deferral. Actual search inclusion and timing remain up to search engines.
