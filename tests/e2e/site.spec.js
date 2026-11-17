@@ -418,6 +418,36 @@ test('server-rendered share metadata uses the live PNG while the shared browser 
   await page.clock.fastForward(1000);await expect(page.locator('[data-time=seconds]')).toHaveText('04');
 });
 
+test('search metadata is specific to each page and event markup describes public viewing without promising admission',async({page,request})=>{
+  await mock(page);
+  const titles=new Set(),descriptions=new Set();
+  for(const path of ['./','drawing-rules/','hot-spot-rules/','privacy/']){
+    await page.goto(path);
+    const title=await page.title(),description=await page.locator('meta[name="description"]').getAttribute('content');
+    expect(title).toContain('Nob Hill Chile Drop');expect(description.length).toBeGreaterThan(40);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content',title);
+    await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute('content',title);
+    await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content',description);
+    await expect(page.locator('meta[name="twitter:description"]')).toHaveAttribute('content',description);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href',`https://chiledrop.com/${path==='./'?'':path}`);
+    titles.add(title);descriptions.add(description);
+    if(path!=='./')await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0);
+  }
+  expect(titles.size).toBe(4);expect(descriptions.size).toBe(4);
+  // Parse the initial HTML, so search engines do not need JavaScript or a working API.
+  const html=await (await request.get('./')).text();
+  const event=JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+  expect(event['@type']).toBe('Event');expect(event.startDate).toBe('2026-12-31');
+  expect(event.isAccessibleForFree).toBe(true);expect(event.offers).toBeUndefined();expect(event.endDate).toBeUndefined();
+  expect(event.url).toBe('https://chiledrop.com/');expect(event.location.name).toBe('Hotel Zazz');
+  expect(event.location.address).toEqual({'@type':'PostalAddress',streetAddress:'3711 Central Ave NE',addressLocality:'Albuquerque',addressRegion:'NM',postalCode:'87108',addressCountry:'US'});
+  expect((await request.get(new URL(event.image).pathname)).headers()['content-type']).toContain('image/png');
+  await page.goto('./');
+  await expect(page).toHaveTitle(/Albuquerque New Year's Eve 2026/);
+  await expect(page.locator('.venue')).toContainText(`${event.location.address.streetAddress}, ${event.location.address.addressLocality}, ${event.location.address.addressRegion} ${event.location.address.postalCode}`);
+  expect(await page.locator('body').innerText()).toContain(event.description);
+});
+
 test('public pages allow crawling and indexing while private pages stay noindex and outside the sitemap',async({page,request})=>{
   const robots=await (await request.get('robots.txt')).text();
   expect(robots).toMatch(/User-agent: \*\s+Allow: \//);
@@ -431,5 +461,6 @@ test('public pages allow crawling and indexing while private pages stay noindex 
   }
   for(const path of ['admin/','entry/','pass/','check-in/']){
     await page.goto(path);await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content','noindex,follow');
+    await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0);
   }
 });

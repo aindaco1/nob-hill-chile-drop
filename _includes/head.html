@@ -1,9 +1,16 @@
 {% assign canonical = page.url | absolute_url %}
+{% if page.url == '/' %}
+  {% assign event_year = site.data.event.date | date: '%Y' %}
+  {% capture page_title %}{{ site.title }} | Albuquerque New Year's Eve {{ event_year }}{% endcapture %}
+{% else %}
+  {% capture page_title %}{{ page.title | default: site.title }} | {{ site.title }}{% endcapture %}
+{% endif %}
+{% assign page_description = page.description | default: site.description %}
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ page.title | default: site.title | escape }} | New Year's Eve in Albuquerque</title>
-  <meta name="description" content="{{ site.description | escape }}">
+  <title>{{ page_title | escape }}</title>
+  <meta name="description" content="{{ page_description | escape }}">
   <meta name="theme-color" content="#101921">
   <meta name="color-scheme" content="dark light">
   {% if site.preview or page.private_page %}<meta name="robots" content="noindex,follow">{% endif %}
@@ -11,9 +18,9 @@
   <link rel="canonical" href="{{ canonical }}">
   <link rel="icon" href="{{ '/assets/art/favicon.svg' | relative_url }}" type="image/svg+xml">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="{{ site.title }}">
-  <meta property="og:title" content="{{ site.title }} — {{ site.data.event.date }}">
-  <meta property="og:description" content="{{ site.description | escape }}">
+  <meta property="og:site_name" content="{{ site.title | escape }}">
+  <meta property="og:title" content="{{ page_title | escape }}">
+  <meta property="og:description" content="{{ page_description | escape }}">
   <meta property="og:url" content="{{ canonical }}">
   {% assign share_image = site.api_base | append: '/share/countdown.png' %}
   <meta property="og:image" content="{{ share_image }}">
@@ -23,7 +30,10 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="{{ site.title | escape }}. Countdown snapshot to midnight Mountain Time, {{ site.data.event.date | escape }}. {{ site.data.event.venue | escape }}, Albuquerque.">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ page_title | escape }}">
+  <meta name="twitter:description" content="{{ page_description | escape }}">
   <meta name="twitter:image" content="{{ share_image }}">
+  {% if page.url == '/' %}{% include event-schema.html %}{% endif %}
   <link rel="preload" href="{{ '/assets/fonts/barlow-condensed-latin-700-normal.woff2' | relative_url }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}?v={{ site.asset_version }}">
 </head>

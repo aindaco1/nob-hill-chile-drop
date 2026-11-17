@@ -56,7 +56,12 @@ film:
   poster: /assets/art/chile-sign.svg
 visit:
   title: Getting here
-  address: 3711 Central Ave NE, Albuquerque, NM 87108
+  address:
+    street: 3711 Central Ave NE
+    city: Albuquerque
+    region: NM
+    postal_code: "87108"
+    country: US
   map_embed_url: https://www.openstreetmap.org/export/embed.html?bbox=-106.6061%2C35.0781%2C-106.5991%2C35.0821&layer=mapnik&marker=35.080089%2C-106.602618
   map_url: https://www.openstreetmap.org/?mlat=35.080089&mlon=-106.602618#map=17/35.080089/-106.602618
   note: We'll post the viewing map, parking, street access, and accessibility details here before the event.

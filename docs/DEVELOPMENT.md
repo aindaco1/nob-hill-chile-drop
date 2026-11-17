@@ -127,6 +127,16 @@ Browser coverage checks all six templates at desktop, 375px and 320px widths, 20
 
 ## Editing content and assets
 
+### Search metadata
+
+[`_includes/head.html`](../_includes/head.html) computes each page's title and description once for search, Open Graph and Twitter. The homepage title derives the event year from `_data/event.yml`; `_config.yml` supplies its description. Public rules/privacy pages supply their own `description` front matter. Canonicals and sitemap URLs use `absolute_url`, preserving the configured origin/base path.
+
+The homepage alone includes [`event-schema.html`](../_includes/event-schema.html). Its Event JSON-LD describes public viewing using the existing event name/date, venue, viewing copy and structured `visit.address` fields in `_data/event.yml`; the visible venue address uses those same fields. The date is December 31 without a start hour: only the Hot Spot's opening time is confirmed, and that is not the start of general public viewing. The midnight drop/countdown retains its precise Mountain Time instant. Do not invent an end time, performers, ticket offers or guaranteed Hot Spot admission. The schema image uses the timeless PNG; social cards retain the current countdown endpoint. See [Google's event guidance](https://developers.google.com/search/docs/appearance/structured-data/event).
+
+Keep public pages crawlable and private pages `noindex`/outside the sitemap. Validate initial HTML metadata and JSON-LD with `npm test`, then check deployed HTML, canonical redirects and the public sitemap. Search Console submission and actual search inclusion/rich results are separate from a successful release.
+
+### Content change checklist
+
 | Change | Files/checks |
 | --- | --- |
 | Copy, hours, venue, navigation, FAQ | `_data/event.yml`; inspect rendered page and rules/hours includes |

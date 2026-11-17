@@ -1,0 +1,28 @@
+{% assign event = site.data.event %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "@id": {{ '/' | absolute_url | append: '#event' | jsonify }},
+  "name": {{ event.name | jsonify }},
+  "url": {{ '/' | absolute_url | jsonify }},
+  "description": {{ event.viewing.description | jsonify }},
+  "startDate": {{ event.date | date: '%Y-%m-%d' | jsonify }},
+  "eventStatus": "https://schema.org/EventScheduled",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "isAccessibleForFree": true,
+  "image": {{ '/assets/art/social-card.png' | absolute_url | jsonify }},
+  "location": {
+    "@type": "Place",
+    "name": {{ event.venue | jsonify }},
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": {{ event.visit.address.street | jsonify }},
+      "addressLocality": {{ event.visit.address.city | jsonify }},
+      "addressRegion": {{ event.visit.address.region | jsonify }},
+      "postalCode": {{ event.visit.address.postal_code | jsonify }},
+      "addressCountry": {{ event.visit.address.country | jsonify }}
+    }
+  }
+}
+</script>
