@@ -34,7 +34,7 @@ No Cloudflare/Resend credentials are needed for the static build or automated te
 npm run dev
 ```
 
-Open [localhost](http://127.0.0.1:4173/nob-hill-chile-drop/). The root `/` is intentionally not the app. `dev` builds once and serves `_site` with no-store caching; it does not watch sources. In another terminal, run `npm run build` after an edit, then refresh. Stop the server with Ctrl-C.
+Open [localhost](http://127.0.0.1:4173/). The local server and browser tests read the base path from `_config.yml`; the custom-domain build uses the root `/`. `dev` builds once and serves `_site` with no-store caching; it does not watch sources. In another terminal, run `npm run build` after an edit, then refresh. Stop the server with Ctrl-C.
 
 `npm run build` prepares generated assets, runs Jekyll and minifies built CSS/JS. Do not invoke Jekyll alone on a fresh checkout: fonts, shared modules and `event.ics` must be prepared first. Files in `_site`, copied fonts/licenses, `assets/js/header-nav.js`, `assets/js/api-client.js` and `event.ics` are generated and ignored.
 
@@ -67,7 +67,7 @@ npx wrangler d1 migrations apply nob-hill-chile-drop --local --config api/wrangl
 CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false npx wrangler dev \
   --config api/wrangler.toml --local --ip 127.0.0.1 --port 8787 \
   --var ALLOWED_ORIGINS:http://127.0.0.1:4173 \
-  --var PUBLIC_SITE_URL:http://127.0.0.1:4173/nob-hill-chile-drop \
+  --var PUBLIC_SITE_URL:http://127.0.0.1:4173 \
   --var RESEND_API_KEY: --var OUTBOX_ENCRYPTION_KEY:
 ```
 
@@ -107,7 +107,7 @@ The form should remain closed in this mail-disabled mode. Stop any server alread
 
 The baseline at application commit `3b45b14` contains 3 content tests, 23 API tests and 11 browser tests. Counts may change; passing assertions matter more than a fixed total. API coverage includes unbiased ranking, whole-group stopping, verification races, immutable preparation, idempotent publication, bounded mail retries, privacy erasure and CSV safety.
 
-Browser coverage includes project-subpath assets, responsive overflow, the above-fold hero, mocked entry/admin flows, closed/error states, keyboard navigation, motion controls, axe checks, 200% text enlargement, midnight countdown behavior and no-JavaScript information access. The hero matrix includes 320×568, 375×667, 390×844, 768×1024, 1024×768, 1280×720, 1366×768 and 1440×900.
+Browser coverage includes root-path assets, responsive overflow, the above-fold hero, mocked entry/admin flows, closed/error states, keyboard navigation, motion controls, axe checks, 200% text enlargement, midnight countdown behavior and no-JavaScript information access. The hero matrix includes 320×568, 375×667, 390×844, 768×1024, 1024×768, 1280×720, 1366×768 and 1440×900.
 
 The OpenStreetMap iframe is stubbed in browser tests to keep CI independent of the map service. For map changes, inspect the real embed separately on desktop and small phones: verify the Hotel Zazz marker, street-label contrast, zoom controls, attribution and larger-map fallback. Keep address/URLs in `_data/event.yml`, preserve lazy loading and a working Referer header, and update the privacy notice if the provider changes. Do not infer event boundaries, parking or street access from the neighborhood map.
 

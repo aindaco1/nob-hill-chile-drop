@@ -8,9 +8,9 @@ The website and free group drawing for New Year's Eve at Hotel Zazz in Nob Hill,
 
 | Resource | Location |
 | --- | --- |
-| Public website | [Nob Hill Chile Drop](https://aindaco1.github.io/nob-hill-chile-drop/) |
-| Private entry access | [Manage your group](https://aindaco1.github.io/nob-hill-chile-drop/entry/) |
-| Organizer access | [Organizer desk](https://aindaco1.github.io/nob-hill-chile-drop/admin/) |
+| Public website | [Nob Hill Chile Drop](https://chiledrop.com/) |
+| Private entry access | [Manage your group](https://chiledrop.com/entry/) |
+| Organizer access | [Organizer desk](https://chiledrop.com/admin/) |
 | Source | [GitHub repository](https://github.com/aindaco1/nob-hill-chile-drop) |
 | Deployment checks | [GitHub Actions](https://github.com/aindaco1/nob-hill-chile-drop/actions/workflows/pages.yml) |
 | API health | [Worker health](https://nob-hill-chile-drop-api.jogo.workers.dev/health) |
@@ -48,7 +48,7 @@ npx playwright install chromium
 npm run dev
 ```
 
-Open [the local preview](http://127.0.0.1:4173/nob-hill-chile-drop/). `npm run dev` builds once; run `npm run build` after edits. Production CORS does not permit local form submissions. Use the mocked browser tests and isolated API tests described in [Development](docs/DEVELOPMENT.md).
+Open [the local preview](http://127.0.0.1:4173/). `npm run dev` builds once; run `npm run build` after edits. Production CORS does not permit local form submissions. Use the mocked browser tests and isolated API tests described in [Development](docs/DEVELOPMENT.md).
 
 ```sh
 npm test

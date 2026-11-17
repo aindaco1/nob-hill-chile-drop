@@ -35,7 +35,7 @@ One place remains unused. Every group has an equal chance at each rank, but uneq
 
 ## Organizer workflow
 
-The [organizer desk](https://aindaco1.github.io/nob-hill-chile-drop/admin/) uses the email allowlist in Worker configuration. Currently the organizer and report recipient are `alonso@dustwave.xyz`. Requesting a login link sends email; do not use it for unattended smoke tests.
+The [organizer desk](https://chiledrop.com/admin/) uses the email allowlist in Worker configuration. Currently the organizer and report recipient are `alonso@dustwave.xyz`. Requesting a login link sends email; do not use it for unattended smoke tests.
 
 | Step | Action and consequence |
 | --- | --- |

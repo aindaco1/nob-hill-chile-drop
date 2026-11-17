@@ -32,7 +32,7 @@ export function fixture() {
   const messages = new Map();
   const calls = [];
   const env = {
-    DB, ALLOWED_ORIGINS: 'https://aindaco1.github.io', PUBLIC_SITE_URL: 'https://aindaco1.github.io/nob-hill-chile-drop',
+    DB, ALLOWED_ORIGINS: 'https://chiledrop.com', PUBLIC_SITE_URL: 'https://chiledrop.com',
     ADMIN_EMAILS: 'alonso@dustwave.xyz', REPORT_EMAIL: 'alonso@dustwave.xyz', EMAIL_FROM: 'Chile Drop <hello@example.test>',
     RESEND_API_KEY: 'test-only-no-network', TICKET_SIGNING_KEY: 'JxZup8cL7YLs41tN8mJknhYVZXW1Fe8DJBRG0XhQxGs', OUTBOX_ENCRYPTION_KEY: 'j86WBIp6sDlQ2NpGa6VH4fh6HUaq3XVccN4moM3TLYA'
   };
@@ -53,7 +53,7 @@ export function fixture() {
       method, headers, ...(body === undefined ? {} : { body: JSON.stringify(body) })
     }), env);
     const text = await response.text();
-    return { status: response.status, headers: response.headers, body: response.headers.get('content-type')?.startsWith('application/json') ? JSON.parse(text) : text };
+    return { status: response.status, headers: response.headers, body: text && response.headers.get('content-type')?.startsWith('application/json') ? JSON.parse(text) : text };
   }
   async function link(kind, to) {
     const rows = DB.prepare('SELECT * FROM outbox WHERE kind=? ORDER BY rowid DESC').bind(kind).all();

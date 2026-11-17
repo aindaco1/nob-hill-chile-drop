@@ -6,7 +6,7 @@ We’re checking in whole groups. One QR covers everyone on that pass, and they 
 
 **Before your shift**
 
-Open [volunteer check-in](https://aindaco1.github.io/nob-hill-chile-drop/check-in/) on your phone. Sign in with your organizer-approved email, then open the emailed link in the browser you’ll use for scanning. Keep that tab open and allow camera access. You’ll need a charged phone and an internet connection.
+Open [volunteer check-in](https://chiledrop.com/check-in/) on your phone. Sign in with your organizer-approved email, then open the emailed link in the browser you’ll use for scanning. Keep that tab open and allow camera access. You’ll need a charged phone and an internet connection.
 
 Ask an organizer for the reservation cutoff time and who’s coordinating space at the door.
 

@@ -5,8 +5,9 @@ compatibility_date = "2026-10-27"
 workers_dev = true
 
 [vars]
-ALLOWED_ORIGINS = "https://aindaco1.github.io"
-PUBLIC_SITE_URL = "https://aindaco1.github.io/nob-hill-chile-drop"
+# Retain the previous origin during the custom-domain transition.
+ALLOWED_ORIGINS = "https://chiledrop.com,https://www.chiledrop.com,https://aindaco1.github.io"
+PUBLIC_SITE_URL = "https://chiledrop.com"
 ADMIN_EMAILS = "alonso@dustwave.xyz"
 REPORT_EMAIL = "alonso@dustwave.xyz"
 EMAIL_FROM = "Nob Hill Chile Drop <events@dustwave.xyz>"

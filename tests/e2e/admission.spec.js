@@ -5,8 +5,8 @@ import { dispatchOutbox } from '../../api/src/mail.js';
 import { applyTextScale } from '../../shared/dust-wave-platform/packages/test-core/src/rendering.js';
 
 const api = 'https://nob-hill-chile-drop-api.jogo.workers.dev';
-const base = 'http://127.0.0.1:4173/nob-hill-chile-drop';
 async function setup(page) {
+  const base = test.info().project.use.baseURL.replace(/\/$/, '');
   const f = fixture(); f.env.ALLOWED_ORIGINS = 'http://127.0.0.1:4173'; f.env.PUBLIC_SITE_URL = base;
   const admin = await f.admin();
   f.seedEntry(4, true, 'Alex Example'); f.seedEntry(4, true, 'Sam Example');
@@ -58,7 +58,7 @@ async function setup(page) {
     await expect(page.locator('[data-ticket-heading]')).toBeFocused();
     await expect(page.locator('[data-ticket-badge]')).toBeInViewport({ ratio: 1 });
   }
-  return { f, admin, selected, waitlisted, selectedCode, waitlistCode, settings, login, scan, errors, dropResponse: () => { abortCheckIn = true; } };
+  return { base, f, admin, selected, waitlisted, selectedCode, waitlistCode, settings, login, scan, errors, dropResponse: () => { abortCheckIn = true; } };
 }
 
 test('emailed QR image decodes to the protected scanner; guest pass cannot self-check in', async ({ page }) => {
@@ -69,16 +69,16 @@ test('emailed QR image decodes to the protected scanner; guest pass cannot self-
     await expect(page.locator('[data-pass-instructions]')).toContainText('not guaranteed');
     await expect(page.locator('[data-pass-image]')).toBeVisible();
     const email = [...s.f.messages.values()].map(row => row.payload).find(row => row.to.includes(s.waitlisted.email));
-    const decoded = await page.evaluate(async data => {
-      const { default: decode } = await import('/nob-hill-chile-drop/assets/js/qr-reader.js');
+    const decoded = await page.evaluate(async ({ data, moduleUrl }) => {
+      const { default: decode } = await import(moduleUrl);
       const image = new Image(); image.src = `data:image/gif;base64,${data}`; await image.decode();
       const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
       const context = canvas.getContext('2d'); context.drawImage(image,0,0); const frame = context.getImageData(0,0,canvas.width,canvas.height);
       return decode(frame.data, frame.width, frame.height)?.data;
-    }, email.attachments[0].content);
+    }, { data: email.attachments[0].content, moduleUrl: `${s.base}/assets/js/qr-reader.js` });
     expect(decoded).toBe(ticketUrl(s.f.env, s.waitlistCode));
     await page.reload(); await expect(page.locator('[data-pass-heading]')).toHaveText('Hot Spot waitlist');
-    await page.goto('about:blank'); await page.goto(`${base}/pass/#ticket=invalid`);
+    await page.goto('about:blank'); await page.goto(`${s.base}/pass/#ticket=invalid`);
     await expect(page.locator('[data-pass-card]')).toBeHidden();
     await expect(page.locator('[data-pass-status]')).toContainText('Open the group QR link');
     await page.goto(decoded);
@@ -169,7 +169,7 @@ test('guest and volunteer pages fit small phones, enlarged text and keyboard con
     await s.settings(s.f.now()); await s.login();
     for (const size of [{width:320,height:568},{width:375,height:667},{width:1280,height:900}]) {
       await page.setViewportSize(size); await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.goto(`${base}/check-in/`);
+      await page.goto(`${s.base}/check-in/`);
       if (size.width === 375) await applyTextScale(page, 200);
       await s.scan(s.waitlistCode);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -188,7 +188,7 @@ test('guest and volunteer pages fit small phones, enlarged text and keyboard con
 test('organizer controls cutoff in Mountain Time, volunteer access and an initial-admission counter', async ({ page }) => {
   const s = await setup(page);
   try {
-    await page.goto(`${base}/admin/`);
+    await page.goto(`${s.base}/admin/`);
     await page.evaluate(token => sessionStorage.setItem('chile-drop-admin-session',token),s.admin);
     await page.reload();
     await expect(page.locator('[data-admission-counts]')).toContainText('People initially admitted');

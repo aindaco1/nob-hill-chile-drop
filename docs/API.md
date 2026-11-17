@@ -6,7 +6,7 @@ Implementation: [`api/src/worker.js`](../api/src/worker.js). Group pass, volunte
 
 ## Requests, authentication and responses
 
-- `GET /health` and `GET /api/config` can be read without an Origin header. All other routes require an exact allowed `Origin`, including authenticated GETs. Production currently allows `https://aindaco1.github.io` (no project path).
+- `GET /health` and `GET /api/config` can be read without an Origin header. All other routes require an exact allowed `Origin`, including authenticated GETs. The cutover configuration allows `https://chiledrop.com`, `https://www.chiledrop.com`, and temporarily `https://aindaco1.github.io` (origins only, no paths).
 - JSON bodies must be objects with `Content-Type: application/json`, with a maximum body size of 8,192 bytes. Empty draw actions still send `{}`. The deletion route has no JSON body requirement.
 - Private requests use `Authorization: Bearer <accessToken>`. Entry and admin tokens are distinct roles. No cookies are used; the browser wrapper sets `credentials: 'omit'` and a 20-second request timeout.
 - `OPTIONS` responds 204 for an allowed origin and permits GET, POST, PATCH, DELETE and OPTIONS with Content-Type/Authorization headers. Origin checks are not a substitute for Bearer authorization.

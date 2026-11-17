@@ -7,7 +7,7 @@
 | Service | Current identity / source |
 | --- | --- |
 | Static host | GitHub Pages, repository `aindaco1/nob-hill-chile-drop`, branch `main`, Actions deployment |
-| Public URL | `https://aindaco1.github.io/nob-hill-chile-drop/` |
+| Public URL | `https://chiledrop.com/` |
 | Worker | `nob-hill-chile-drop-api`, `https://nob-hill-chile-drop-api.jogo.workers.dev` |
 | Cloudflare account | `fee6147787ab9025e9fd8e6e8fd76910` in `api/wrangler.toml` |
 | D1 | `nob-hill-chile-drop`, binding `DB`, ID `7afb3b21-843c-4967-bda4-edc5272e9a3c` |
@@ -22,8 +22,8 @@ Resource IDs and URLs are identifiers, not secrets. Recheck the live account/bin
 | `_config.yml`: `api_base` | Worker URL used by browser modules |
 | `_config.yml`: `asset_version` | Public CSS/JS cache invalidation value |
 | `_config.yml`: `preview` | Indexing flag; true currently emits noindex |
-| Worker `ALLOWED_ORIGINS` | Comma-separated exact origins; currently only `https://aindaco1.github.io` |
-| Worker `PUBLIC_SITE_URL` | Full public base including project path; used in emailed links |
+| Worker `ALLOWED_ORIGINS` | Comma-separated exact origins: `https://chiledrop.com`, `https://www.chiledrop.com`, and temporarily `https://aindaco1.github.io` |
+| Worker `PUBLIC_SITE_URL` | `https://chiledrop.com`; used in emailed access and group QR links |
 | Worker `ADMIN_EMAILS` | Comma-separated organizer allowlist; currently `alonso@dustwave.xyz` |
 | Worker `REPORT_EMAIL` | Weekly report destination and reply-to; currently the same organizer |
 | Worker `EMAIL_FROM` | Verified sender identity |
@@ -40,19 +40,19 @@ These do not register entrants or send email:
 ```sh
 curl --fail --silent https://nob-hill-chile-drop-api.jogo.workers.dev/health
 curl --fail --silent https://nob-hill-chile-drop-api.jogo.workers.dev/api/config
-curl --fail --silent --head https://aindaco1.github.io/nob-hill-chile-drop/
+curl --fail --silent --head https://chiledrop.com/
 ```
 
 Health reads D1 settings and validates the shape/presence of mail configuration. It does not send through Resend. Public config reports effective registration, capacity/lock state and published counts, not a private guest list. Refresh it instead of relying on a dated screenshot.
 
-For CORS, inspect a read-only config response with `Origin: https://aindaco1.github.io`, or an OPTIONS preflight. The allow-origin response must match exactly. Check live Pages HTML/assets separately from API health. To establish real organizer access or email delivery, use an explicitly authorized controlled check and record what was observed; do not infer it from a passing build or health response.
+For CORS, inspect a read-only config response with `Origin: https://chiledrop.com`, or an OPTIONS preflight. The allow-origin response must match exactly. Check live Pages HTML/assets separately from API health. To establish real organizer access or email delivery, use an explicitly authorized controlled check and record what was observed; do not infer it from a passing build or health response.
 
 ## Release the static site
 
 1. Inspect the diff and run checks required by [AGENTS.md](../AGENTS.md). For application changes, `npm test`; for API changes, also `npm run api:check`.
 2. Commit the reviewed change and push the intended branch. Pushing `main` runs [the Pages workflow](../.github/workflows/pages.yml); pull requests run verification without deployment. Follow the current user's requested release scope.
 3. Check that **the exact pushed commit** passed verification and Pages deployment in [Actions](https://github.com/aindaco1/nob-hill-chile-drop/actions/workflows/pages.yml). A successful earlier run is not evidence for this release.
-4. Inspect the live page and changed assets under `/nob-hill-chile-drop/`; verify important links, responsive layout and no unexpected indexing change. Allow for CDN propagation; use a fresh reload when inspecting cached assets.
+4. Inspect the live page and changed assets at the custom-domain root; verify important links, responsive layout and no unexpected indexing change. Allow for CDN propagation; use a fresh reload when inspecting cached assets.
 
 CI uses Node 26.12.1, Ruby 3.3, recursive submodules, locked dependencies, Chromium tests, the full `npm test` and Worker dry-run checks. It uploads `_site` only after verification. Documentation, backend source, dependencies and tests are excluded by Jekyll configuration. **CI does not deploy the Worker or migrate D1.** A docs-only main push also runs the full pipeline.
 
@@ -166,4 +166,15 @@ At the organizer-directed campaign end, remove the weekly report trigger and dep
 
 Before final launch, resolve the outstanding organizer decisions in [Project](PROJECT.md), verify public facts/rules/privacy, and decide whether `preview` should become false. Noindex removal does not open registration; those are independent settings.
 
-A domain move requires confirmed ownership/access, Pages domain/DNS/HTTPS configuration, `_config.yml` `url`/`baseurl`, Worker `PUBLIC_SITE_URL` and `ALLOWED_ORIGINS`, plus calendar URL generation, metadata, local-server/test subpaths and documentation. Audit hardcoded references. Preserve the old address or redirect behavior as needed for already-issued links; do not strand entry access. Test both origins and links during the transition, then remove obsolete allowances deliberately. No custom domain is currently configured.
+A domain move requires confirmed ownership/access, Pages domain/DNS/HTTPS configuration, `_config.yml` `url`/`baseurl`, Worker `PUBLIC_SITE_URL` and `ALLOWED_ORIGINS`, plus calendar URL generation, metadata, local-server/test subpaths and documentation. Audit hardcoded references. Preserve the old address or redirect behavior as needed for already-issued links; do not strand entry access. Test both origins and links during the transition, then remove obsolete allowances deliberately. The organizer set `chiledrop.com` in GitHub Pages on November 17, 2026. DNS, certificate issuance and public cutover require separate verification; a successful Pages build alone does not establish them.
+
+
+### chiledrop.com cutover
+
+- Keep GoDaddy nameservers. GitHub Pages remains the static host; the Worker stays on its existing workers.dev address and uses the existing D1 and secrets. No schema migration or registration/drawing action is part of this change.
+- Deploy the root-path build and Worker URL/CORS configuration, then verify the exact Pages workflow and live Worker origins before the organizer changes DNS. `preview: true` stays in place; indexing is a separate decision.
+- At GoDaddy, replace the WebsiteBuilder apex A record with `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153` (four `@` records), and set the `www` CNAME to `aindaco1.github.io`. Leave the other records intact.
+- GitHub account **Settings → Pages → Add a domain** generates the ownership TXT challenge. Use the exact generated value at `_github-pages-challenge-aindaco1`, then verify it and retain the TXT record. This is separate from the repository custom-domain setting.
+- After DNS propagation, check apex and www, enable Enforce HTTPS when the certificate is ready, and verify root assets, canonicals, calendar and private-page paths. Check the old GitHub address redirects `/nob-hill-chile-drop/entry/`, `/admin/`, `/pass/` and `/check-in/` to the corresponding root paths, preserving query strings and URL fragments. Use dummy fragments with requests intercepted for browser tests, never real tokens.
+- Keep the old origin allowed until transition checks pass and old clients no longer need it. Existing sessions are scoped to the browser origin, so staff may need a fresh sign-in on the new domain. Preserve queued mail payloads, idempotency keys and the ticket-signing key.
+- For rollback, coordinate DNS and the GitHub custom-domain setting with the prior static configuration and Worker URL/CORS values. Revert only the domain change; never restore D1 or replay messages.

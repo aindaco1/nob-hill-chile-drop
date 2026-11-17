@@ -19,5 +19,4 @@ test('shared packages stay on the documented immutable gitlink',()=>{
 test('private service, configuration, docs and dependencies are excluded from Pages output',()=>{
   const config=parse(read('_config.yml'));
   for(const path of ['api','shared','node_modules','docs','tests','scripts','platform.json']) assert.ok(config.exclude.includes(path));
-  assert.equal(config.baseurl,'/nob-hill-chile-drop');
 });

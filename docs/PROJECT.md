@@ -21,7 +21,7 @@ Help visitors understand the event, enter a free group drawing for Hot Spot admi
 | Capacity | At most 2,000 people, kept in whole groups |
 | Administration and weekly reports | `alonso@dustwave.xyz` |
 | Closing and drawing | Manual; no announced date |
-| Domain | Temporary GitHub Pages address; custom-domain ownership/access unconfirmed |
+| Domain | `chiledrop.com` on GitHub Pages; GoDaddy DNS retained; November 17 cutover authorized, public DNS/HTTPS verification pending |
 
 The Hot Spot offers close views, music, alcohol sales for eligible adults and a chance to appear in event coverage. Drinks are purchased separately. Public viewing outside it does not require a drawing entry. The hotel's guest-only upper area is a separate internal access arrangement, not a public lottery tier.
 
@@ -83,8 +83,8 @@ On November 7, the organizer deferred the items below until later. Keep the curr
 | Arrival and admission fulfillment | Check-in location and final door staffing; QR passes, together-only group arrival, restricted volunteer check-in and organizer-set cutoff are deployed; see [Check-in](CHECK_IN.md) |
 | Visitor logistics | Approved public viewing map, parking, street closures/access, accessible routes/restrooms and bag rules |
 | Approved footage | A usable video and confirmed permission; no placeholder footage is presented as real |
-| Final public launch | Organizer decision on indexing, final logistics and any domain cutover |
-| Domain | Confirm ownership and access before DNS or naming changes |
+| Final public launch | Organizer decision on indexing and final logistics; domain cutover separately authorized November 17 |
+| Domain | November 17 cutover authorized; finish DNS, ownership TXT verification and HTTPS checks in Operations |
 | Waitlist | Volunteers may admit whole waitlisted groups at the door after the reservation cutoff when space permits; no automatic promotion, cancellation/reallocation or second drawing workflow |
 | Data retention | Organizer-approved retention/deletion schedule; there is no automatic campaign-wide purge |
 | Mail observability | Provider acceptance is recorded; no delivery/bounce webhook or automatic inbox-delivery confirmation |
@@ -101,6 +101,12 @@ A QR scan only verifies. Signed-in volunteers see name, email, party size and st
 November 7 scanner refinement: remove the manual paste-link field and Verify group button. Successful scans bring the result card and its validity badge into view, with keyboard focus on the heading and no animated scrolling for reduced motion. Routine guidance is shortened; both admission confirmations and server checks remain. Capacity and connection-recovery procedures stay in the operator guide, and actual request failures still prompt a rescan.
 
 The organizer confirmed completion of the isolated phone rehearsal on November 7, including selected and waitlisted check-in. This is organizer-reported device acceptance; it does not establish coverage of every phone/browser. Automated tests still use isolated data and stub email. Private rehearsal records remain outside this public repository.
+
+## November 17 custom-domain preparation
+
+The organizer authorized the move to `https://chiledrop.com` and set the GitHub Pages custom domain. The build now uses an empty base path; metadata, assets and the generated calendar follow `_config.yml`. Local preview and browser tests use the configured path. Worker URL configuration sends new access and QR links to the custom domain and accepts the apex, www and previous GitHub origin during the transition.
+
+GoDaddy remains the registrar/DNS host. DNS propagation, GitHub ownership verification, certificate issuance and Enforce HTTPS remain distinct from code deployment; follow [the cutover procedure](OPERATIONS.md#chiledropcom-cutover). The existing noindex setting, API hostname, database, mail sender, signing/encryption keys and event/drawing settings are unchanged. The historical snapshot below remains dated November 7.
 
 ## Verified production snapshot
 

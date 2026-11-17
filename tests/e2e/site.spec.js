@@ -11,12 +11,28 @@ test.beforeEach(async({page})=>{
   await page.route('https://www.openstreetmap.org/export/embed.html?*',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="en"><title>Venue map</title><body><p>Hotel Zazz map preview</p><a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></body></html>'}));
 });
 async function mock(page,handler){await page.route(api+'/**',async route=>{if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers});const path=new URL(route.request().url()).pathname;const body=handler?await handler(path,route.request()):{registrationOpen:true,capacity:2000};return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify(path==='/api/config'?{mediaConsentVersion:'hot-spot-media-2026-11-04',entryFormVersion,maxGroupSize:8,...body}:body)});});}
-test('responsive pages, landmarks and asset paths work at the GitHub project subpath',async({page,request})=>{
+test('responsive pages, landmarks and asset paths work at the configured site root',async({page,request})=>{
   await mock(page);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   for(const width of [320,375,768,1024,1440]){await page.setViewportSize({width,height:900});await page.goto('./');await waitForStableRendering(page);await expect(page.locator('h1')).toHaveCount(1);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await expect(page.getByRole('button',{name:'Enter the free drawing'})).toBeVisible();}
   const paths=await page.locator('a[href],img[src],script[src],link[rel=stylesheet]').evaluateAll(nodes=>nodes.map(n=>n.href||n.src).filter(url=>url?.startsWith(location.origin)).map(url=>new URL(url).pathname));
   for(const path of new Set(paths)){const response=await request.get(path);expect(response.status(),path).toBe(200);}
   expect(errors).toEqual([]);
+});
+test('custom-domain pages and calendar use the canonical root without the old project prefix',async({page,request})=>{
+  await mock(page);
+  for(const path of ['', 'entry/', 'admin/', 'pass/', 'check-in/']){
+    await page.goto(`./${path}`);
+    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',`https://chiledrop.com/${path}`);
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content',`https://chiledrop.com/${path}`);
+    const resources=await page.locator('script[src],link[rel=stylesheet],link[rel=icon]').evaluateAll(nodes=>nodes.map(n=>n.src||n.href));
+    for(const url of resources){
+      expect(new URL(url).pathname).not.toContain('/nob-hill-chile-drop/');
+      expect((await request.get(url)).status(),url).toBe(200);
+    }
+  }
+  const calendar=await request.get('event.ics');
+  expect(calendar.status()).toBe(200);
+  expect((await calendar.text()).replace(/\r\n /g,'')).toContain('\r\nURL:https://chiledrop.com/\r\n');
 });
 test('countdown sits below the header and the hero fits the first desktop and phone viewport',async({page})=>{
   await mock(page);
@@ -214,8 +230,8 @@ test('WCAG 2.2 AA checks and 200% text reflow pass',async({page})=>{
 test('countdown stops at zero after Mountain Time midnight',async({page})=>{
   await mock(page);await page.clock.install({time:new Date('2027-01-01T07:00:01Z')});await page.goto('./');await expect(page.locator('#countdown-title')).toHaveText('Happy New Year, Albuquerque!');await expect(page.locator('[data-time=days]')).toHaveText('00');await expect(page.locator('[data-time=seconds]')).toHaveText('00');
 });
-test('event, calendar and FAQ remain useful without JavaScript',async({browser})=>{
-  const context=await browser.newContext({javaScriptEnabled:false,viewport:{width:375,height:812}});const page=await context.newPage();await page.goto('http://127.0.0.1:4173/nob-hill-chile-drop/');await expect(page.locator('h1')).toBeVisible();await expect(page.locator('#mobile-nav')).toBeVisible();await page.locator('summary').filter({hasText:'When does the chile drop?'}).click();await expect(page.locator('details[open]')).toContainText('January 1, 2027');await context.close();
+test('event, calendar and FAQ remain useful without JavaScript',async({browser,baseURL})=>{
+  const context=await browser.newContext({javaScriptEnabled:false,viewport:{width:375,height:812}});const page=await context.newPage();await page.goto(baseURL);await expect(page.locator('h1')).toBeVisible();await expect(page.locator('#mobile-nav')).toBeVisible();await page.locator('summary').filter({hasText:'When does the chile drop?'}).click();await expect(page.locator('details[open]')).toContainText('January 1, 2027');await context.close();
 });
 test('verification clears link token and loads only the scoped group',async({page})=>{
   await mock(page,path=>path.endsWith('/verify')?{accessToken:'entry-session',entry:{name:'Sample Guest',email:'guest@example.com',groupSize:3,status:'entered',canEdit:true,requiredMediaConsentVersion:'hot-spot-media-2026-11-04',requiredEntryFormVersion:entryFormVersion,maxGroupSize:8,...location}}:{});await page.goto('entry/#token=sample-verification');await expect(page.locator('[data-entry-result]')).toContainText('Your email is confirmed');expect(new URL(page.url()).hash).toBe('');await expect(page.getByLabel('People in your group')).toHaveValue('3');await page.getByRole('button',{name:'Sign out of this entry'}).click();await expect(page.locator('[data-entry-link]')).toBeVisible();
