@@ -34,6 +34,11 @@ test('transactional emails remain readable on phones, with accessible actions an
       }
     });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${name} enlarged`).toBe(true);
+    const wrappedValues = await page.locator('td[align="right"]').evaluateAll(cells => cells.filter(cell => {
+      const range = document.createRange(); range.selectNodeContents(cell);
+      return range.getClientRects().length > 1;
+    }).map(cell => cell.textContent));
+    expect(wrappedValues, `${name} metrics remain on one line at 200% text`).toEqual([]);
     await page.screenshot({ path: test.info().outputPath(`${name}-320-enlarged.png`), fullPage: true });
     await page.emulateMedia({ colorScheme: 'light' });
   }

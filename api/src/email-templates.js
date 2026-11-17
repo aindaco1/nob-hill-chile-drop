@@ -14,7 +14,7 @@ export function action(url, label) {
 }
 
 export function detailsTable(rows) {
-  return `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;border-collapse:collapse;font-size:16px;line-height:1.5;overflow-wrap:anywhere">${rows.map(([label, value]) => `<tr><th scope="row" align="left" style="padding:10px 12px 10px 0;border-bottom:1px solid #cad0bc;font-weight:normal">${escapeHtml(label)}</th><td align="right" style="padding:10px 0;border-bottom:1px solid #cad0bc;font-weight:bold">${escapeHtml(value)}</td></tr>`).join('')}</table>`;
+  return `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;border-collapse:collapse;font-size:16px;line-height:1.5;overflow-wrap:anywhere">${rows.map(([label, value]) => `<tr><th scope="row" align="left" style="padding:10px 12px 10px 0;border-bottom:1px solid #cad0bc;font-weight:normal">${escapeHtml(label)}</th><td align="right" style="padding:10px 0;border-bottom:1px solid #cad0bc;font-weight:bold;white-space:nowrap">${escapeHtml(value)}</td></tr>`).join('')}</table>`;
 }
 
 export function emailDocument({ title, preview, body }) {
@@ -23,7 +23,7 @@ export function emailDocument({ title, preview, body }) {
 <body style="margin:0;padding:0;background-color:#101921;color:#101921;font-family:Arial,Helvetica,sans-serif">
 <div lang="en" dir="ltr" aria-hidden="true" style="display:none;max-height:0;overflow:hidden;mso-hide:all">${escapeHtml(preview)}</div>
 <table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#101921"><tr><td align="center" style="padding:28px 12px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f3f0e5" style="max-width:600px;background-color:#f3f0e5;color:#101921;border-top:6px solid #d0ec91">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f3f0e5" style="max-width:600px;background-color:#f3f0e5;color:#101921;border-top:6px solid #d0ec91;overflow-wrap:anywhere">
 <tr><td bgcolor="#192630" style="padding:24px;color:#f9f7ee;border-bottom:3px solid #ff725d"><p style="margin:0 0 5px;font-family:Georgia,serif;font-size:20px;font-style:italic;color:#d0ec91">Nob Hill</p><p style="margin:0;font-family:'Arial Narrow',Arial,sans-serif;font-size:32px;line-height:1.1;font-weight:bold;letter-spacing:1px;color:#f9f7ee">CHILE DROP</p><p style="margin:12px 0 0;font-size:14px;line-height:1.5;color:#f9f7ee">NEW YEAR’S EVE IN ALBUQUERQUE</p></td></tr>
 <tr><td style="padding:28px 24px 8px"><h1 style="margin:0 0 24px;font-family:'Arial Narrow',Arial,sans-serif;font-size:28px;line-height:1.2;color:#101921">${escapeHtml(title)}</h1>${body}</td></tr>
 <tr><td style="padding:20px 24px;border-top:1px dashed #7c8972;color:#43514d"><p style="margin:0;font-size:14px;line-height:1.6">Nob Hill Chile Drop<br>December 31, 2026 · Hotel Zazz<br>Nob Hill, Albuquerque</p></td></tr>
