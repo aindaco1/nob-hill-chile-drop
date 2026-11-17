@@ -417,3 +417,12 @@ test('server-rendered share metadata uses the live PNG while the shared browser 
   for(const [unit,value] of Object.entries({days:'02',hours:'03',minutes:'04',seconds:'05'}))await expect(page.locator(`[data-time=${unit}]`)).toHaveText(value);
   await page.clock.fastForward(1000);await expect(page.locator('[data-time=seconds]')).toHaveText('04');
 });
+
+test('preview robots policy permits link previews while keeping general crawlers blocked and noindex',async({page,request})=>{
+  const robots=await (await request.get('robots.txt')).text();
+  const groups=robots.trim().split(/\n\s*\n/);
+  expect(groups[0]).toMatch(/User-agent: \*\s+Disallow: \//);
+  for(const bot of ['facebookexternalhit','Twitterbot','LinkedInBot','Slackbot-LinkExpanding','Discordbot','TelegramBot','WhatsApp'])expect(groups[1]).toContain(`User-agent: ${bot}\n`);
+  expect(groups[1]).toMatch(/Allow: \/\s*$/);expect(groups[1]).not.toMatch(/Googlebot|Bingbot|meta-externalagent|GPTBot|User-agent: \*/);
+  await mock(page);await page.goto('./');await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content','noindex,follow');
+});
