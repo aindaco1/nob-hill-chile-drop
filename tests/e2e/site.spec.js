@@ -234,7 +234,46 @@ test('event, calendar and FAQ remain useful without JavaScript',async({browser,b
   const context=await browser.newContext({javaScriptEnabled:false,viewport:{width:375,height:812}});const page=await context.newPage();await page.goto(baseURL);await expect(page.locator('h1')).toBeVisible();await expect(page.locator('#mobile-nav')).toBeVisible();await page.locator('summary').filter({hasText:'When does the chile drop?'}).click();await expect(page.locator('details[open]')).toContainText('January 1, 2027');await context.close();
 });
 test('verification clears link token and loads only the scoped group',async({page})=>{
-  await mock(page,path=>path.endsWith('/verify')?{accessToken:'entry-session',entry:{name:'Sample Guest',email:'guest@example.com',groupSize:3,status:'entered',canEdit:true,requiredMediaConsentVersion:'hot-spot-media-2026-11-04',requiredEntryFormVersion:entryFormVersion,maxGroupSize:8,...location}}:{});await page.goto('entry/#token=sample-verification');await expect(page.locator('[data-entry-result]')).toContainText('Your email is confirmed');expect(new URL(page.url()).hash).toBe('');await expect(page.getByLabel('People in your group')).toHaveValue('3');await page.getByRole('button',{name:'Sign out of this entry'}).click();await expect(page.locator('[data-entry-link]')).toBeVisible();
+  const entry={name:'Sample Guest',email:'guest@example.com',groupSize:3,status:'entered',canEdit:true,requiredMediaConsentVersion:'hot-spot-media-2026-11-04',requiredEntryFormVersion:entryFormVersion,maxGroupSize:8,...location};
+  await mock(page,path=>path.endsWith('/verify')?{accessToken:'entry-session',entry}:{entry});
+  await page.goto('entry/#token=sample-verification');
+  const result=page.locator('[data-entry-result]');
+  await expect(result).toBeVisible();
+  await expect(page.locator('[data-page-status]')).toBeHidden();
+  await expect(result).toContainText('entry in the free drawing is confirmed');
+  await expect(result).toContainText('does not guarantee Hot Spot admission');
+  await expect(result).toContainText('email you the result after the drawing');
+  await expect(result).toContainText('selected or waitlisted');
+  await expect(result).toContainText('Group size: 3.');
+  await expect(result).toHaveAttribute('role','status');
+  expect(new URL(page.url()).hash).toBe('');
+  await expect(page.getByLabel('People in your group')).toHaveValue('3');
+  await page.reload();
+  await expect(result).toContainText('entry in the free drawing is confirmed');
+  await expect(page.locator('[data-page-status]')).toBeHidden();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for(const viewport of [{width:1440,height:900},{width:375,height:667},{width:320,height:568}]){
+    await page.setViewportSize(viewport);
+    expect(await result.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await result.screenshot({path:test.info().outputPath(`entry-confirmed-${viewport.width}.png`)});
+  }
+  await applyTextScale(page,200);
+  expect(await result.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.getByRole('button',{name:'Sign out of this entry'}).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-entry-link]')).toBeVisible();
+});
+test('failed private-link verification shows recovery without confirming an entry',async({page})=>{
+  await page.route(api+'/**',route=>route.request().method()==='OPTIONS'
+    ?route.fulfill({status:204,headers})
+    :route.fulfill({status:410,headers,contentType:'application/json',body:JSON.stringify({error:'This link has expired.'})}));
+  await page.goto('entry/#token=expired-test-only');
+  await expect(page.locator('[data-page-status]')).toContainText('Request a fresh link');
+  await expect(page.locator('[data-page-status]')).toHaveAttribute('data-kind','error');
+  await expect(page.locator('[data-entry-result]')).toBeHidden();
+  await expect(page.locator('[data-entry-link]')).toBeVisible();
+  expect(new URL(page.url()).hash).toBe('');
 });
 test('admin protects drawing transitions and safely renders untrusted guest names',async({page})=>{
   const snapshot={entries:[{id:'one',name:'<img src=x onerror=alert(1)>',email:'test@example.com',groupSize:2,status:'entered'}],total:1,counts:{totalOrders:1,verifiedOrders:1,verifiedPeople:2},settings:{registrationOpen:true,capacity:2000,locked:false},preview:null,drawing:null,outbox:{sent:1}};

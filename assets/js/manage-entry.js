@@ -8,7 +8,7 @@ const signout = document.querySelector('[data-entry-signout]');
 const key = 'chile-drop-entry-session';
 let session = sessionStorage.getItem(key) || '';
 function render(entry) {
-  const labels = { entered: 'Your email is confirmed. Your group is entered in the free drawing.', pending_verification: 'Your email needs confirmation.', selected: 'Your whole group has been selected for Hot Spot admission. Check your email for event instructions.', waitlisted: 'Your group is on the waitlist. You can still watch the drop from public vantage points.' };
+  const labels = { entered: 'Your group’s entry in the free drawing is confirmed. This does not guarantee Hot Spot admission. We’ll email you the result after the drawing, whether your group is selected or waitlisted.', pending_verification: 'Your email needs confirmation.', selected: 'Your whole group has been selected for Hot Spot admission. Check your email for event instructions.', waitlisted: 'Your group is on the waitlist. You can still watch the drop from public vantage points.' };
   result.textContent = `${labels[entry.status] || 'Your group entry is recorded.'} Group size: ${entry.groupSize}.`;
   result.hidden = false; linkForm.hidden = true; signout.hidden = false;
   if (['selected', 'waitlisted'].includes(entry.status)) loadPass();
@@ -42,8 +42,9 @@ if (token) {
   status(feedback, 'Confirming your private entry link…');
   try {
     const response = await request('/api/entries/verify', { method: 'POST', body: { token } });
-    session = response.accessToken; sessionStorage.setItem(key, session); render(response.entry);
-    status(feedback, 'Your private link is confirmed.', 'success');
+    session = response.accessToken; sessionStorage.setItem(key, session);
+    status(feedback, '');
+    render(response.entry);
   } catch (error) {status(feedback, message(error) + ' Request a fresh link below if this one has expired.', 'error');}
 } else if (session) await load();
 linkForm.addEventListener('submit', event => {

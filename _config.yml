@@ -4,7 +4,7 @@ url: https://chiledrop.com
 baseurl: ""
 legacy_site_base: https://aindaco1.github.io/nob-hill-chile-drop/
 lang: en-US
-asset_version: "20261117-1"
+asset_version: "20261117-2"
 preview: true
 theme: null
 api_base: https://nob-hill-chile-drop-api.jogo.workers.dev
