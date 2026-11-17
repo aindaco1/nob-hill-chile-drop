@@ -22,6 +22,7 @@
     "yaml": "2.9.0"
   },
   "dependencies": {
+    "@resvg/resvg-wasm": "2.6.2",
     "jsqr": "1.4.0",
     "qrcode-generator": "2.0.4"
   }

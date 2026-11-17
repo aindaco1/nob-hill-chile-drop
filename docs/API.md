@@ -127,3 +127,11 @@ Mutating requests are limited to 60 per IP per 15-minute bucket. Entry registrat
 Use [the isolated fixture](../api/test/helpers.js) for write examples and regression tests. Safe production probes are the two read-only routes shown in [Operations](OPERATIONS.md). Do not paste live tokens into shell history, docs or support threads.
 
 Publication returns `queuedResultEmails` (selected plus waitlisted) on first publication; repeats return `alreadyPublished` without queuing duplicates. Health additionally returns `ticketsConfigured`, which checks the independent ticket-signing key configuration.
+
+## Countdown share image
+
+`GET /share/countdown.png` returns a 1200×630 `image/png` snapshot of the event countdown, including days/hours/minutes/seconds and an “as of” Mountain Time timestamp. `HEAD` returns PNG headers without rendering a body; other methods return 405 with `Allow: GET, HEAD`. This exact public path works without Origin/auth, before the private API's Origin gate. It reads no entry data and does not change any state.
+
+Time and content come exclusively from the Worker clock and the build-generated event/art payload. Query parameters are ignored. The website uses the same countdown helper. At the midnight instant the card switches to the New Year greeting. Responses use `Cache-Control: public, max-age=0, must-revalidate`; one bounded in-memory render is shared within the same countdown second. This cannot force social platforms to update already-cached previews.
+
+If PNG generation fails, the handler returns a 302 with `Cache-Control: no-store` to the configured public site's timeless `/assets/art/social-card.png`. API auth, CORS, drawing and email contracts are unchanged.

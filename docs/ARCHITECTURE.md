@@ -43,7 +43,7 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Public rules and privacy notice | [`drawing-rules.html`](../drawing-rules.html), [`hot-spot-rules.html`](../hot-spot-rules.html), [`privacy.html`](../privacy.html) |
 | Canonical illustration | [`assets/art/chile-sign.svg`](../assets/art/chile-sign.svg) |
 | Asset/font/calendar generation | [`scripts/prepare-assets.mjs`](../scripts/prepare-assets.mjs) |
-| Social image generation | [`scripts/render-social.mjs`](../scripts/render-social.mjs) |
+| Social image generation | [`api/src/share-card.js`](../api/src/share-card.js), [`share-template.js`](../api/src/share-template.js), [`share-renderer.js`](../api/src/share-renderer.js); [`scripts/render-social.mjs`](../scripts/render-social.mjs) generates the timeless fallback from the same template |
 | Local static server | [`scripts/serve.mjs`](../scripts/serve.mjs) |
 | Request handling, auth and state transitions | [`api/src/worker.js`](../api/src/worker.js) |
 | Random order and capacity calculation | [`api/src/drawing.js`](../api/src/drawing.js) |
@@ -66,7 +66,7 @@ The submodule at `shared/dust-wave-platform` is pinned by Git and [platform.json
 | `admin-shell` | Browser API client and accessible confirmation-dialog control; event-specific roles, routes and authorization remain here |
 | `worker-core` | Email normalization, tokens/hashes, bounded request/response parsing, email preparation, outbox IDs/retries and Resend failure classification |
 
-`npm run build` first copies font files/licenses and the shared navigation/API modules, then generates `event.ics`, builds Jekyll into `_site`, and minifies assets there. These copied outputs are ignored by Git. The social PNG is a separate, explicit render step and is committed when updated. Edit the source SVG, not the generated image, for art changes.
+`npm run build` first copies font files/licenses and the shared navigation/API modules, then generates `event.ics`, builds Jekyll into `_site`, and minifies assets there. These copied outputs are ignored by Git. `scripts/prepare-share.mjs` also derives the Worker's ignored public event/art payload from YAML and the canonical SVG; Wrangler runs it before bundling. The public PNG route uses the same countdown calculation as the website, bundled fonts/art and Pool's resvg rendering pattern, without D1 or external fetches. The timeless fallback PNG is a separate, explicit render step and is committed when updated. Edit the source SVG/template, not the generated image, for art changes.
 
 The site has no runtime React/Vue framework. Keep reusable primitives in Platform and event-specific behavior here. Store RSVP/cart modules are not connected to the drawing.
 

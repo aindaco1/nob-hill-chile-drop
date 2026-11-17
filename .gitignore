@@ -61,6 +61,7 @@ assets/js/confirmation-dialog.js
 event.ics
 work/
 api/.wrangler/
+api/src/generated/
 
 assets/js/qr-code.js
 assets/js/qr-reader.js

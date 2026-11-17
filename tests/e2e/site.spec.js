@@ -407,3 +407,13 @@ test('compact drawing field pairs wrap on narrow cards and enlarged text with ke
   await form.locator('[name=email]').focus();
   for(const name of ['groupSize','city','stateProvince','country']){await page.keyboard.press('Tab');await expect(form.locator(`[name=${name}]`)).toBeFocused();}
 });
+
+test('server-rendered share metadata uses the live PNG while the shared browser countdown ticks',async({page,request})=>{
+  const html=await (await request.get('./')).text();
+  expect(html).toContain('property="og:image" content="https://nob-hill-chile-drop-api.jogo.workers.dev/share/countdown.png"');
+  expect(html).toContain('name="twitter:image" content="https://nob-hill-chile-drop-api.jogo.workers.dev/share/countdown.png"');
+  expect(html).toContain('property="og:image:type" content="image/png"');
+  await mock(page);await page.clock.install({time:new Date('2026-12-30T03:55:54Z')});await page.clock.pauseAt(new Date('2026-12-30T03:55:55Z'));await page.goto('./');
+  for(const [unit,value] of Object.entries({days:'02',hours:'03',minutes:'04',seconds:'05'}))await expect(page.locator(`[data-time=${unit}]`)).toHaveText(value);
+  await page.clock.fastForward(1000);await expect(page.locator('[data-time=seconds]')).toHaveText('04');
+});

@@ -135,3 +135,9 @@ The production checks above did **not** log in, query private entrants, send ema
 ## Source provenance
 
 The starting ZEMA Landing structure was taken from commit `ea02ebc8594569cdeee35a3c959c8196479ea911`. Dust Wave Platform is pinned to v0.44.0, commit `ad2be4580fc05978e7d8d05c93c3038c13e09876`; [platform.json](../platform.json) records package versions. This project does not automatically track either upstream's latest code.
+
+## November 17 countdown share preview
+
+Social previews use a 1200×630 Worker-generated PNG showing days, hours, minutes and seconds until the existing midnight Mountain Time drop. It is a timestamped snapshot when a crawler fetches the image, not an animated clock within an existing post. At midnight the image changes to “Happy New Year, Albuquerque!” Existing shares may retain the social platform's cached image.
+
+The design reuses the chile artwork and brand fonts. The website and image share countdown arithmetic; `_data/event.yml` owns the date/time and public event details. Pool's resvg PNG pattern is reused without campaign storage or financial logic. A timeless image from the same template is the failure fallback. Registration, drawing, indexing and event operations are unchanged.

@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { parse } from 'yaml';
+import './prepare-share.mjs';
 
 await mkdir('assets/fonts', { recursive: true });
 const fonts = [['barlow-condensed', '700'], ['dm-sans', '400'], ['dm-sans', '600']];

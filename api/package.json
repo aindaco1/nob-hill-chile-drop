@@ -3,9 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "pretest": "node ../scripts/prepare-share.mjs",
     "test": "node --test test/*.test.js",
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "dev": "cd .. && wrangler dev --config api/wrangler.toml",
+    "deploy": "cd .. && wrangler deploy --config api/wrangler.toml",
     "migrate:local": "wrangler d1 migrations apply nob-hill-chile-drop --local",
     "migrate:remote": "wrangler d1 migrations apply nob-hill-chile-drop --remote"
   },

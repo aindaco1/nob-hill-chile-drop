@@ -1,3 +1,4 @@
+import { countdown } from './countdown.js';
 (() => {
   'use strict';
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -102,17 +103,15 @@
   const clock = document.querySelector('[data-countdown]');
   if (clock) {
     const target = Date.parse(clock.dataset.countdown);
-    const units = { days: 86400, hours: 3600, minutes: 60, seconds: 1 };
     let timer;
     const tick = () => {
-      let remaining = Math.max(0, Math.floor((target - Date.now()) / 1000));
-      if (!Number.isFinite(remaining)) return;
-      for (const [unit, divisor] of Object.entries(units)) {
+      const remaining = countdown(target, Date.now());
+      if (!remaining) return;
+      for (const unit of ['days', 'hours', 'minutes', 'seconds']) {
         const element = clock.querySelector(`[data-time="${unit}"]`);
-        if (element) element.textContent = String(Math.floor(remaining / divisor)).padStart(2, '0');
-        remaining %= divisor;
+        if (element) element.textContent = String(remaining[unit]).padStart(2, '0');
       }
-      if (Date.now() >= target) {
+      if (remaining.ended) {
         document.getElementById('countdown-title').textContent = 'Happy New Year, Albuquerque!';
         clearInterval(timer);
       }

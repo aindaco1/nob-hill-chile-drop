@@ -1,4 +1,6 @@
 import { createDoor } from './door.js';
+import { createShareCard } from './share-card.js';
+import shareEvent from './generated/share-data.json' with { type: 'json' };
 import { adminRole, adminIdentity, configuredAdmin, createAdminAccess } from './admin-access.js';
 import { entryLinkEmail, staffLinkEmail } from './email-templates.js';
 import { ticketsReady, ownerPass, ticketRecord, publicTicket } from './tickets.js';
@@ -328,13 +330,15 @@ async function exportEntries(env) {
 }
 
 export function createWorker(dependencies = {}) {
-  const deps = { now: Date.now, fetchTarget: globalThis.fetch, ...dependencies };
+  const deps = { now: Date.now, fetchTarget: globalThis.fetch, renderSharePng: async svg => (await import('./share-worker.js')).renderSharePng(svg), ...dependencies };
+  const shareCard = createShareCard({ now: deps.now, renderPng: deps.renderSharePng });
   return {
     async fetch(request, env, context) {
       try {
         const url = new URL(request.url);
         const path = url.pathname.replace(/\/$/, '') || '/';
         const method = request.method;
+        if (path === '/share/countdown.png') return shareCard(request, env);
         if (method === 'OPTIONS') {
           if (!allowedOrigin(request, env)) fail('Origin is not allowed.', 403, 'origin_forbidden');
           return reply(request, env, null, 204);
@@ -349,7 +353,7 @@ export function createWorker(dependencies = {}) {
           const totals = drawing?.published_at ? await env.DB.prepare("SELECT COUNT(*) AS selectedOrders,COALESCE(SUM(e.group_size),0) AS selectedPeople FROM results r JOIN entries e ON e.id=r.entry_id WHERE r.status='selected'").first() : null;
           return reply(request, env, { ...settingsView(row, env), freeEntry: true, priceCents: 0, maxGroupSize: MAX_GROUP_SIZE, entryFormVersion: ENTRY_FORM_VERSION,
             consentVersion: CONSENT_VERSION, mediaConsentVersion: MEDIA_CONSENT_VERSION, resultsPublished: Boolean(drawing?.published_at), results: totals,
-            eventDate: '2026-12-31', dropTime: '2027-01-01T00:00:00-07:00', timezone: 'America/Denver' });
+            eventDate: '2026-12-31', dropTime: shareEvent.drop_at, timezone: shareEvent.timezone });
         }
         if (!allowedOrigin(request, env)) fail('Origin is not allowed.', 403, 'origin_forbidden');
         const now = deps.now();

@@ -20,7 +20,7 @@
       <div class="footer-bottom"><span>© 2026 Nob Hill Chile Drop</span>{% if page.chile_backdrops %}<button class="motion-toggle motion-toggle--inline" type="button" data-motion-toggle data-motion-label="animations" hidden>Pause animations</button>{% endif %}<nav aria-label="Legal"><a href="{{ '/drawing-rules/' | relative_url }}">Drawing rules</a><a href="{{ '/hot-spot-rules/' | relative_url }}">Hot Spot rules</a><a href="{{ '/privacy/' | relative_url }}">Privacy</a></nav></div>
     </footer>
     <script src="{{ '/assets/js/header-nav.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/main.js' | relative_url }}?v={{ site.asset_version }}" defer></script>
+    <script src="{{ '/assets/js/main.js' | relative_url }}?v={{ site.asset_version }}" type="module"></script>
     {% if page.form_script %}<script src="{{ page.form_script | relative_url }}?v={{ site.asset_version }}" type="module"></script>{% endif %}
     <noscript><style>.menu-toggle{display:none}.mobile-nav{display:flex;position:static;flex-wrap:wrap;width:100%}.site-header{flex-wrap:wrap}</style></noscript>
   </body>

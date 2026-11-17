@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { parse } from 'yaml';
 import { assertConsumerPin } from '../shared/dust-wave-platform/packages/test-core/src/consumer-pin.js';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -19,4 +20,14 @@ test('shared packages stay on the documented immutable gitlink',()=>{
 test('private service, configuration, docs and dependencies are excluded from Pages output',()=>{
   const config=parse(read('_config.yml'));
   for(const path of ['api','shared','node_modules','docs','tests','scripts','platform.json']) assert.ok(config.exclude.includes(path));
+});
+test('share build uses the canonical event and art without retriggering its own file watcher',()=>{
+  execFileSync(process.execPath,['scripts/prepare-share.mjs']);
+  const path='api/src/generated/share-data.json';
+  const before=statSync(path).mtimeMs;
+  const data=JSON.parse(read(path));
+  assert.equal(data.drop_at,parse(read('_data/event.yml')).drop_at);
+  assert.equal(data.art,read('assets/art/chile-sign.svg'));
+  execFileSync(process.execPath,['scripts/prepare-share.mjs']);
+  assert.equal(statSync(path).mtimeMs,before);
 });
