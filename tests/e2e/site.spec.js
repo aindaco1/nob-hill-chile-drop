@@ -278,6 +278,32 @@ test('failed private-link verification shows recovery without confirming an entr
 test('admin protects drawing transitions and safely renders untrusted guest names',async({page})=>{
   const snapshot={entries:[{id:'one',name:'<img src=x onerror=alert(1)>',email:'test@example.com',groupSize:2,status:'entered'}],total:1,counts:{totalOrders:1,verifiedOrders:1,verifiedPeople:2},settings:{registrationOpen:true,capacity:2000,locked:false},preview:null,drawing:null,outbox:{sent:1}};
   await mock(page,(path)=>path.endsWith('/verify')?{accessToken:'admin-session'}:snapshot);await page.goto('admin/#token=admin-link');await expect(page.locator('[data-admin-dashboard]')).toBeVisible();await expect(page.getByRole('button',{name:'Prepare drawing'})).toBeDisabled();await expect(page.getByRole('button',{name:'Commit reviewed result'})).toBeDisabled();await expect(page.locator('[data-entries] img')).toHaveCount(0);await expect(page.locator('[data-entries]')).toContainText('<img src=x');expect(new URL(page.url()).hash).toBe('');await expect(page.locator('meta[name=robots]')).toHaveAttribute('content','noindex,follow');
+  const email=page.locator('[data-email-summary]');
+  await expect(email).toHaveText('Email status: 1 accepted for sending.');
+  snapshot.outbox={sent:11,queued:2,sending:1,failed:1,needs_review:3,expired:4,suppressed:2};
+  const refresh=page.getByRole('button',{name:'Refresh',exact:true});
+  await refresh.focus();await page.keyboard.press('Enter');
+  await expect(email).toHaveText('Email status: 2 waiting to send; 1 sending; 11 accepted for sending; 1 failed; 3 awaiting review; 4 expired before sending; 2 stopped.');
+  await expect(refresh).toBeEnabled();
+  await expect(page.getByRole('button',{name:'Prepare drawing'})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Commit reviewed result'})).toBeDisabled();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for(const [width,height] of [[1280,800],[375,667],[320,568]]){
+    await page.setViewportSize({width,height});
+    await email.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.locator('[data-email-status]').screenshot({path:test.info().outputPath(`email-status-${width}.png`)});
+  }
+  await applyTextScale(page,200);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  // A taller capture avoids clipping this long paragraph; reflow was checked at 320×568 above.
+  await page.setViewportSize({width:320,height:1200});
+  await page.locator('[data-email-status]').screenshot({path:test.info().outputPath('email-status-320-enlarged.png')});
+  await page.setViewportSize({width:320,height:568});
+  snapshot.outbox={sent:0};await refresh.click();
+  await expect(email).toHaveText('No emails queued or sent yet.');
+  snapshot.outbox={};await refresh.click();
+  await expect(email).toHaveText('No emails queued or sent yet.');
 });
 
 

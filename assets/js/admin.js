@@ -36,10 +36,12 @@ function render(data) {
   find('[data-pagination]').textContent=data.total?`${offset+1}–${Math.min(offset+data.entries.length,data.total)} of ${data.total} groups`:'No entries yet.';
   find('[data-previous]').disabled=offset===0;
   find('[data-next]').disabled=offset+50>=data.total;
-  find('[data-email-summary]').textContent=`Email outbox: ${JSON.stringify(data.outbox)}. Weekly activity reports go to the configured organizer address on Mondays.`;
+  const emailLabels={queued:'waiting to send',sending:'sending',sent:'accepted for sending',failed:'failed',needs_review:'awaiting review',expired:'expired before sending',suppressed:'stopped'};
+  const emailCounts=Object.entries(emailLabels).filter(([state])=>data.outbox[state]>0).map(([state,label])=>`${data.outbox[state].toLocaleString('en-US')} ${label}`);
+  find('[data-email-summary]').textContent=emailCounts.length?`Email status: ${emailCounts.join('; ')}.`:'No emails queued or sent yet.';
 }
 async function refresh(){try{render(await request(`/api/admin/entries?limit=50&offset=${offset}`,{},session));await doorAdmin.refresh();}catch(error){if(error.status===401)signout();throw error;}}
-async function action(button,run){button.disabled=true;try{await run();await refresh();}catch(error){status(feedback,message(error),'error');feedback.focus();}finally{if(snapshot)render(snapshot);else button.disabled=false;}}
+async function action(button,run){button.disabled=true;try{await run();await refresh();}catch(error){status(feedback,message(error),'error');feedback.focus();}finally{button.disabled=false;if(snapshot)render(snapshot);}}
 if(token){status(feedback,'Confirming organizer sign-in…');try{const data=await request('/api/admin/verify',{method:'POST',body:{token}});session=data.accessToken;sessionStorage.setItem(key,session);await refresh();status(feedback,'Signed in. No drawing or email publication happens automatically.','success');}catch(error){signout();status(feedback,message(error),'error');}}
 else if(session){try{await refresh();}catch(error){status(feedback,message(error),'error');}}
 login.addEventListener('submit',event=>{event.preventDefault();withSubmit(login,async()=>{try{await request('/api/admin/login',{method:'POST',body:{email:login.elements.email.value}});status(feedback,'If this is an authorized organizer email, a sign-in link will arrive shortly.','success');}catch(error){status(feedback,message(error),'error');}});});

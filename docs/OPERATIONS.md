@@ -123,6 +123,8 @@ All six message types (entry link, organizer link, volunteer link, selected resu
 
 Jobs use stable IDs as Resend idempotency keys, including `winner:<preview UUID>:<entry UUID>` and `waitlist:<preview UUID>:<entry UUID>`. A database lease prevents concurrent dispatchers from taking the same job. Dispatch runs every minute, handles at most 10 jobs per invocation within a 20-second budget, and prioritizes admin/volunteer/entry links before reports and results. A large winner batch may take hours to drain; publication is not immediate bulk delivery.
 
+The organizer desk shows readable email-status counts for all message types. “Accepted for sending” maps to `sent` and does not confirm inbox delivery; “stopped” maps to `suppressed`. Empty queues show “No emails queued or sent yet.” Refresh updates these counts without sending or retrying any messages.
+
 Review current provider quotas and Worker execution limits before a large publication. The 2,000-winner test uses local SQLite and stub email; it does not establish production throughput or delivery capacity. No paid-plan upgrade is assumed by the implementation.
 
 | Outbox state | Interpretation / action |
