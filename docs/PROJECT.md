@@ -104,7 +104,7 @@ The organizer confirmed completion of the isolated phone rehearsal on November 7
 
 ## November 17 custom-domain preparation
 
-The organizer authorized the move to `https://chiledrop.com` and set the GitHub Pages custom domain. The build now uses an empty base path; metadata, assets and the generated calendar follow `_config.yml`. Local preview and browser tests use the configured path. Worker URL configuration sends new access and QR links to the custom domain and accepts the apex, www and previous GitHub origin during the transition.
+The organizer authorized the move to `https://chiledrop.com` and set the GitHub Pages custom domain. The build now uses an empty base path; metadata, assets and the generated calendar follow `_config.yml`. Local preview and browser tests use the configured path. Worker URL configuration sends new access and QR links to the custom domain and accepts the apex, www and previous GitHub origin during the transition. The scanner retains an exact origin/path allowance for older GitHub-address QR images through `legacy_site_base`; signature and staff checks are unchanged.
 
 GoDaddy remains the registrar/DNS host. DNS propagation, GitHub ownership verification, certificate issuance and Enforce HTTPS remain distinct from code deployment; follow [the cutover procedure](OPERATIONS.md#chiledropcom-cutover). The existing noindex setting, API hostname, database, mail sender, signing/encryption keys and event/drawing settings are unchanged. The historical snapshot below remains dated November 7.
 

@@ -43,7 +43,7 @@ async function setup(page) {
     await expect(page.locator('[data-door-workspace]')).toBeVisible();
     expect(new URL(page.url()).hash).toBe('');
   }
-  async function scan(code) {
+  async function scan(code, siteBase = f.env.PUBLIC_SITE_URL) {
     await page.evaluate(data => {
       navigator.mediaDevices.getUserMedia = async () => {
         const image = new Image(); image.src = data; await image.decode();
@@ -52,7 +52,7 @@ async function setup(page) {
         context.drawImage(image, (640-image.naturalWidth)/2, (480-image.naturalHeight)/2);
         const stream = canvas.captureStream(10); window.__cameraStream = stream; return stream;
       };
-    }, ticketImage(ticketUrl(f.env, code)));
+    }, ticketImage(ticketUrl({ ...f.env, PUBLIC_SITE_URL: siteBase }, code)));
     await page.locator('[data-camera-start]').click();
     await expect(page.locator('[data-door-ticket]')).toBeVisible();
     await expect(page.locator('[data-ticket-heading]')).toBeFocused();
@@ -105,6 +105,28 @@ test('volunteer verifies contact details, explicitly checks in the whole group a
     await expect(page.locator('[data-door-confirm]')).toBeHidden();
     await s.scan(s.selectedCode); await expect(page.locator('[data-ticket-badge]')).toHaveText('Already checked in');
     expect((await s.f.request('/api/admin/door', { token: s.admin })).body.counts.people).toBe(4);
+    expect(s.errors).toEqual([]);
+  } finally { s.f.close(); }
+});
+
+test('scanner accepts a previously issued GitHub QR but rejects unrelated hosts and project paths', async ({ page }) => {
+  const s = await setup(page);
+  try {
+    await s.settings(); await s.login();
+    await s.scan(s.selectedCode, 'https://aindaco1.github.io/nob-hill-chile-drop');
+    await expect(page.locator('[data-ticket-name]')).toHaveText(s.selected.name);
+    expect(s.f.DB.prepare('SELECT COUNT(*) AS n FROM admissions').first().n).toBe(0);
+    const parsed = await page.evaluate(async ({ code, moduleUrl }) => {
+      const { ticketCode } = await import(moduleUrl);
+      return [
+        `https://aindaco1.github.io/nob-hill-chile-drop/pass/#ticket=${code}`,
+        `https://aindaco1.github.io/another-project/check-in/#ticket=${code}`,
+        `https://aindaco1.github.io.evil.test/nob-hill-chile-drop/check-in/#ticket=${code}`,
+        `http://aindaco1.github.io/nob-hill-chile-drop/check-in/#ticket=${code}`,
+        `https://aindaco1.github.io/nob-hill-chile-drop/admin/#ticket=${code}`
+      ].map(ticketCode);
+    }, { code: s.selectedCode, moduleUrl: `${s.base}/assets/js/ticket-code.js` });
+    expect(parsed).toEqual([s.selectedCode, '', '', '', '']);
     expect(s.errors).toEqual([]);
   } finally { s.f.close(); }
 });

@@ -4,8 +4,9 @@ export function ticketCode(value) {
   if (pattern.test(text)) return text;
   try {
     const url = new URL(text);
-    const base = new URL(document.body.dataset.siteBase, location.origin);
-    if (url.origin !== location.origin || !['check-in/', 'pass/'].some(path => url.pathname === new URL(path, base).pathname)) return '';
+    const bases = [new URL(document.body.dataset.siteBase, location.origin)];
+    if (document.body.dataset.legacySiteBase) bases.push(new URL(document.body.dataset.legacySiteBase));
+    if (!bases.some(base => url.origin === base.origin && ['check-in/', 'pass/'].some(path => url.pathname === new URL(path, base).pathname))) return '';
     const token = new URLSearchParams(url.hash.slice(1)).get('ticket') || '';
     return pattern.test(token) ? token : '';
   } catch { return ''; }

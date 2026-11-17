@@ -31,6 +31,8 @@ Volunteers request a single-use email sign-in link (15 minutes). A successful si
 
 The in-page camera scanner avoids opening a new tab for every guest. There is no paste-link field or separate Verify group button. Camera permission is requested only on **Scan a group QR**; frames stay on the device. The scanner stops after reading a code, when the page is hidden, or when staff tap Stop camera. A successful scan scrolls the result card's validity badge into view and focuses its heading; reduced motion uses an immediate scroll.
 
+During the chiledrop.com move, the scanner also accepts the exact HTTPS `/nob-hill-chile-drop/check-in/` and `/nob-hill-chile-drop/pass/` URLs on `aindaco1.github.io`, configured by `_config.yml` `legacy_site_base`. This preserves previously generated QR images without following their URLs. Other origins and unrelated GitHub project paths are rejected, and the Worker still verifies the signed credential and staff permissions.
+
 Verification shows the current name, email, whole-party size, selected/waitlisted status and any prior admission. Staff check both confirmations: the entire party is present, and there is room for everyone. Only then do they press **Check in all N people** / **Admit waitlisted group of N**. Waitlist action is hidden and server-blocked before the cutoff. Unknown/altered codes, revoked staff access and closed check-in are rejected.
 
 The scanner keeps its routine guidance brief: status/cutoff information, the two confirmations and wristband instructions. Capacity assessment and connection-recovery procedures remain in this guide; an actual failed check-in still tells staff to scan again to confirm saved status.
