@@ -1,4 +1,5 @@
 import { resultEmail } from './tickets.js';
+import { emailDocument, paragraph, action, detailsTable } from './email-templates.js';
 import { base64urlEncode, randomToken } from '../../shared/dust-wave-platform/packages/worker-core/src/crypto.js';
 import { prepareResendEmail } from '../../shared/dust-wave-platform/packages/worker-core/src/email.js';
 import { createOutboxJobId, outboxRetryDelayMs } from '../../shared/dust-wave-platform/packages/worker-core/src/outbox.js';
@@ -38,9 +39,9 @@ export async function decodePayload(env, value, id) {
   return JSON.parse(decoder.decode(bytes));
 }
 
-export async function prepareMail(env, { kind, key, recipientId = null, to, subject, text, now, expiresAt = now + 7 * 24 * HOUR }) {
+export async function prepareMail(env, { kind, key, recipientId = null, to, subject, text, html, now, expiresAt = now + 7 * 24 * HOUR }) {
   const id = await createOutboxJobId({ kind, dedupeKey: key });
-  const payload = prepareResendEmail({ from: env.EMAIL_FROM, to: [to], subject, text }, { replyTo: env.REPORT_EMAIL || 'alonso@dustwave.xyz' });
+  const payload = prepareResendEmail({ from: env.EMAIL_FROM, to: [to], subject, text, ...(html ? { html } : {}) }, { replyTo: env.REPORT_EMAIL || 'alonso@dustwave.xyz' });
   return { id, kind, recipientId, payload: await encodePayload(env, payload, id), now, expiresAt };
 }
 
@@ -164,6 +165,12 @@ export async function queueWeeklyReport(env, timestamp = Date.now()) {
   const email = await env.DB.prepare("SELECT status,COUNT(*) AS count FROM outbox GROUP BY status").all();
   const settings = await env.DB.prepare('SELECT registration_open,capacity FROM settings WHERE id=1').first();
   const text = `Nob Hill Chile Drop — weekly activity, ${day}\n\nFree entries; no sales or payments.\nNew groups in the last 7 days: ${stats.newOrders || 0}\nTotal groups: ${stats.totalOrders}\nTotal people requested: ${stats.totalPeople}\nVerified groups: ${stats.verifiedOrders || 0}\nVerified people requested: ${stats.verifiedPeople}\nRegistration: ${settings.registration_open ? 'open' : 'closed'}\nHot Spot capacity: ${settings.capacity}\n\nEmail queue (sent means provider accepted):\n${email.results.map(row => `${row.status}: ${row.count}`).join('\n') || 'No messages'}\n\nReview private entries and drawing status: ${env.PUBLIC_SITE_URL}/admin/\n`;
-  const job = await prepareMail(env, { kind: 'weekly_report', key: day, to: env.REPORT_EMAIL, subject: `Chile Drop activity — ${day}`, text, now: timestamp });
+  const html = emailDocument({ title: 'Your weekly drawing report', preview: `Chile Drop activity for ${day}.`,
+    body: paragraph(`Week ending ${day}. Free entries; no sales or payments.`)
+      + detailsTable([['New groups in the last 7 days', stats.newOrders || 0], ['Total groups', stats.totalOrders], ['Total people requested', stats.totalPeople], ['Verified groups', stats.verifiedOrders || 0], ['Verified people requested', stats.verifiedPeople || 0], ['Registration', settings.registration_open ? 'Open' : 'Closed'], ['Hot Spot capacity', settings.capacity]])
+      + '<h2 style="margin:24px 0 12px;font-size:20px;line-height:1.3">Email queue</h2>' + paragraph('Sent means the email provider accepted the message; it does not confirm inbox delivery.')
+      + (email.results.length ? detailsTable(email.results.map(row => [row.status, row.count])) : paragraph('No messages.'))
+      + action(`${env.PUBLIC_SITE_URL}/admin/`, 'Open organizer desk') });
+  const job = await prepareMail(env, { kind: 'weekly_report', key: day, to: env.REPORT_EMAIL, subject: `Chile Drop activity — ${day}`, text, html, now: timestamp });
   await mailStatement(env, job).run();
 }

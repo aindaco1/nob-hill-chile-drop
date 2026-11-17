@@ -1,4 +1,5 @@
 import { createDoor } from './door.js';
+import { entryLinkEmail, staffLinkEmail } from './email-templates.js';
 import { ticketsReady, ownerPass, ticketRecord, publicTicket } from './tickets.js';
 import { normalizeEmail, randomToken, sha256Hex } from '../../shared/dust-wave-platform/packages/worker-core/src/crypto.js';
 import { readJsonObject, RequestValidationError } from '../../shared/dust-wave-platform/packages/worker-core/src/request-validation.js';
@@ -6,6 +7,7 @@ import { prepareDrawing, drawingSummary } from './drawing.js';
 import { mailReady, prepareMail, mailStatement, dispatchOutbox, queueWeeklyReport } from './mail.js';
 
 const MINUTE = 60_000;
+const ENTRY_LINK_MINUTES = 60;
 const DAY = 86_400_000;
 const CONSENT_VERSION = 'free-drawing-2026-11-04';
 const MEDIA_CONSENT_VERSION = 'hot-spot-media-2026-11-04';
@@ -97,10 +99,9 @@ function siteLink(env, page, token) {
 async function sendEntryLink(env, entry, now) {
   const token = randomToken();
   const hash = await sha256Hex(token);
-  const expires = now + 30 * MINUTE;
+  const expires = now + ENTRY_LINK_MINUTES * MINUTE;
   const job = await prepareMail(env, { kind: 'entry_link', key: hash, recipientId: entry.id, to: entry.email,
-    subject: 'Verify your free Chile Drop drawing entry',
-    text: `Follow this link within 30 minutes to verify or view your Nob Hill Chile Drop entry:\n${siteLink(env, 'entry', token)}\n\nOne group per email address. Entry is free and does not guarantee Hot Spot admission. Your group stays together if selected.\n\nIf you did not request this link, ignore it. Nothing will be verified without using the link.`, now, expiresAt: expires });
+    ...entryLinkEmail(siteLink(env, 'entry', token), ENTRY_LINK_MINUTES), now, expiresAt: expires });
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO tokens (hash,kind,subject,expires_at) SELECT ?,'entry_link',?,?
       WHERE EXISTS(SELECT 1 FROM entries WHERE id=? AND deleted_at IS NULL)`).bind(hash, entry.id, expires, entry.id),
@@ -140,8 +141,7 @@ async function login(request, env, now) {
     const hash = await sha256Hex(token);
     const expires = now + 15 * MINUTE;
     const job = await prepareMail(env, { kind: 'admin_link', key: hash, to: email,
-      subject: 'Sign in to Chile Drop administration',
-      text: `Use this one-time link within 15 minutes:\n${siteLink(env, 'admin', token)}\n\nIf you did not request it, ignore this email.`, now, expiresAt: expires });
+      ...staffLinkEmail(siteLink(env, 'admin', token), 'organizer'), now, expiresAt: expires });
     await env.DB.batch([
       env.DB.prepare("INSERT INTO tokens (hash,kind,subject,expires_at) VALUES (?,'admin_link',?,?)").bind(hash, email, expires),
       mailStatement(env, job)

@@ -2,6 +2,7 @@ import { randomToken, sha256Hex } from '../../shared/dust-wave-platform/packages
 import { RequestValidationError } from '../../shared/dust-wave-platform/packages/worker-core/src/request-validation.js';
 import { prepareMail, mailStatement } from './mail.js';
 import { ticketRecord, publicTicket, cutoffLabel } from './tickets.js';
+import { staffLinkEmail } from './email-templates.js';
 
 const fail = (message, status = 400, code = 'invalid_request') => { throw new RequestValidationError(message, code, status); };
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
@@ -68,8 +69,7 @@ export function createDoor({ admins, normalizedEmail, rateLimit, bodyOf, audit, 
     if (await allowed(env, email)) {
       const token = randomToken(); const hash = await sha256Hex(token); const expires = now + 15 * MINUTE;
       const job = await prepareMail(env, { kind: 'door_link', key: hash, to: email, now, expiresAt: expires,
-        subject: 'Sign in to Chile Drop volunteer check-in',
-        text: `Use this one-time link within 15 minutes to sign in to volunteer check-in:\n${siteLink(env, 'check-in', token)}\n\nOnly use this link on your own device. Do not forward it. If you did not request it, ignore this email.` });
+        ...staffLinkEmail(siteLink(env, 'check-in', token), 'volunteer') });
       await env.DB.batch([env.DB.prepare("INSERT INTO door_tokens(hash,kind,email,expires_at) VALUES(?,'link',?,?)").bind(hash, email, expires), mailStatement(env, job)]);
     }
     return { ok: true, message: 'If your email has volunteer access, a sign-in link will arrive shortly.' };

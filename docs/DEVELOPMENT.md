@@ -117,12 +117,20 @@ The November 4 additions cover required/versioned recording consent, legacy-entr
 
 [`playwright.config.js`](../playwright.config.js) runs Chromium only, starts the static server, and can reuse a local server outside CI. Check that a reused server serves this checkout rather than stale `_site` content. Failed-test traces go under ignored test artifacts. Mocked tests do not establish actual email delivery, production storage or physical-device acceptance. Visually inspect layout changes on desktop/mobile; check Safari/WebKit separately when relevant.
 
+## Email previews
+
+Run `node scripts/preview-emails.mjs` to write six HTML previews and matching plain-text messages into ignored `work/email-previews/`. Open its `index.html` locally. The script uses in-memory SQLite, synthetic guests and stub transport; it does not contact Resend. Action links use a reserved `example.test` domain. CID QR attachments are replaced with data URLs only in the standalone preview, not in outgoing messages.
+
+Edit access-link copy and the shared shell in `api/src/email-templates.js`, result copy in `api/src/tickets.js`, and weekly-report content in `api/src/mail.js`. Preserve meaningful subjects, descriptive action links, plain text, QR attachments and explicit admission/waitlist wording. Keep link deadlines in sync with token/outbox expiry. Run the required `npm test` and `npm run api:check`; focused checks are `node --test api/test/email.test.js` and `npx playwright test tests/e2e/email.spec.js`.
+
+Browser coverage checks all six templates at desktop, 375px and 320px widths, 200% text, keyboard focus, contrast/accessibility and absence of remote asset requests. This is Chromium evidence, not Gmail, Outlook, Apple Mail, automatic dark-mode inversion or inbox-placement testing. Real sends require a separately authorized recipient; never use real guest mail as a test.
+
 ## Editing content and assets
 
 | Change | Files/checks |
 | --- | --- |
 | Copy, hours, venue, navigation, FAQ | `_data/event.yml`; inspect rendered page and rules/hours includes |
-| New date/edition/venue | Also search `api/src/worker.js`, `api/src/mail.js`, `scripts/prepare-assets.mjs`, `_config.yml`, rules, tests and docs for old values |
+| New date/edition/venue | Also search `api/src/worker.js`, `api/src/mail.js`, `api/src/email-templates.js`, `api/src/tickets.js`, `scripts/prepare-assets.mjs`, `_config.yml`, rules, tests and docs for old values |
 | Drawing rules | Public rules/FAQ/form, Worker consent version and validation, algorithm/tests, API and Drawing guides must agree |
 | Falling photo backdrops | `_includes/falling-chiles.html`, homepage `chile_backdrops` flag, `_layouts/default.html`, `assets/css/main.scss`, existing lifecycle in `assets/js/main.js`. Keep all decorative layers non-interactive and hidden from assistive technology. Check vertical stem-up motion, synchronized pause (including stream mode), per-section visibility, reduced motion/no-JS stills and forced colors. |
 | Artwork | `assets/art/chile-sign.svg`; verify hero, mouse cursor and social card |

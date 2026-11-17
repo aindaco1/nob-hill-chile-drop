@@ -88,10 +88,12 @@ The preview response includes `previewId`, `createdAt`, `capacity`, `eligibleOrd
 
 | Credential | Lifetime | Behavior |
 | --- | --- | --- |
-| Entry link | 30 minutes | Single use; emailed in URL fragment |
+| Entry link | 1 hour | Single use; emailed in URL fragment; measured from the request |
 | Organizer link | 15 minutes | Single use; allowlist checked again on exchange |
 | Entry session | 24 hours | Bearer access to that entry |
 | Organizer session | 2 hours | Bearer admin access; allowlist rechecked on each request |
+
+Entry links and their queued messages share the same one-hour deadline from the request, not delivery. Links issued before the lifetime change retain their original expiry; an expired link requires a new request. Volunteer links remain 15 minutes; see [Check-in](CHECK_IN.md).
 
 Tokens are 32 random bytes encoded as 43 base64url characters; only SHA-256 hashes are stored in the token table. Link consumption and session creation are atomic. UI sign-out clears `sessionStorage`, not the server session. Expired token/rate-limit rows are cleaned by scheduled work after a one-day grace period; expired tokens already fail auth immediately.
 

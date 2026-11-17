@@ -46,7 +46,8 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Local static server | [`scripts/serve.mjs`](../scripts/serve.mjs) |
 | Request handling, auth and state transitions | [`api/src/worker.js`](../api/src/worker.js) |
 | Random order and capacity calculation | [`api/src/drawing.js`](../api/src/drawing.js) |
-| Outbox encryption, dispatch, mail copy, reports | [`api/src/mail.js`](../api/src/mail.js) |
+| Outbox encryption, dispatch and reports | [`api/src/mail.js`](../api/src/mail.js) |
+| Shared branded email layout and access-link copy | [`api/src/email-templates.js`](../api/src/email-templates.js); result copy and QR attachments in [`api/src/tickets.js`](../api/src/tickets.js) |
 | Database schema | [`api/migrations/0001_drawing.sql`](../api/migrations/0001_drawing.sql), [`0002_media_consent_and_display.sql`](../api/migrations/0002_media_consent_and_display.sql) |
 | Worker infrastructure | [`api/wrangler.toml`](../api/wrangler.toml) |
 | CI and Pages release | [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) |

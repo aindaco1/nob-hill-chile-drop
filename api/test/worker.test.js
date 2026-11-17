@@ -124,7 +124,7 @@ test('concurrent link redemption creates one session and link expiry is enforced
   assert.deepEqual(results.map(result => result.status).sort(), [200, 401]);
   await f.request('/api/entries/link', { method: 'POST', body: { email: entry.email } });
   const expired = await f.link('entry_link');
-  f.advance(30 * 60_000 + 1);
+  f.advance(60 * 60_000 + 1);
   assert.equal((await f.request('/api/entries/verify', { method: 'POST', body: { token: expired } })).status, 401);
 });
 
