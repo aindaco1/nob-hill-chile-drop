@@ -68,6 +68,7 @@ test('unavailable/malformed provider responses fail closed without leaking crede
     async () => { throw new TypeError('private-provider-detail'); },
     async () => { throw new DOMException('private-provider-detail', 'TimeoutError'); },
     async () => new Response('private-provider-detail', { status: 500 }),
+    async () => new Response(null, { status: 302, headers: { Location: 'https://untrusted.example' } }),
     async () => new Response('not json'),
     async () => new Response('x'.repeat(9000)),
     async () => Response.json({ success: false, 'error-codes': ['invalid-input-secret'] })
@@ -107,7 +108,7 @@ test('Siteverify uses the native receiver, timeout, no redirects and correct tok
     await verifyTurnstile(new Request('https://api.example.test', { headers: { 'cf-connecting-ip': '203.0.113.1' } }), f.env, 'test:admin_login:transport', 'admin_login', async function (url, init) {
       assert.equal(this, globalThis);
       assert.equal(url, 'https://challenges.cloudflare.com/turnstile/v0/siteverify');
-      assert.equal(init.method, 'POST'); assert.equal(init.redirect, 'error');
+      assert.equal(init.method, 'POST'); assert.equal(init.redirect, 'manual');
       assert.ok(init.signal instanceof AbortSignal);
       assert.deepEqual(JSON.parse(init.body), { secret: 'test-secret-key', response: 'test:admin_login:transport', remoteip: '203.0.113.1' });
       return Response.json({ success: true, action: 'admin_login', hostname: 'chiledrop.com' });

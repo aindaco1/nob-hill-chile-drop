@@ -18,7 +18,8 @@ export async function verifyTurnstile(request, env, token, action, fetchTarget) 
   let result;
   try {
     const response = await fetchTarget.call(globalThis, 'https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(8000),
+      // Workers supports manual redirects; a 3xx is rejected below without following it.
+      method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(8000),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ secret: env.TURNSTILE_SECRET_KEY, response: token,
         remoteip: request.headers.get('cf-connecting-ip') || undefined })
