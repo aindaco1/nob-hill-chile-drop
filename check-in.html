@@ -11,6 +11,7 @@ private_page: true
   <form data-door-login class="form-stack">
     <p>Volunteers: sign in with your organizer-approved email. Guests: show your group QR to a volunteer. Opening it here does not check you in.</p>
     <label class="field" for="door-email">Volunteer email<input id="door-email" name="email" type="email" autocomplete="email" required maxlength="254"></label>
+    {% include turnstile.html %}
     <button type="submit" class="button button--lime">Email my sign-in link ↗</button>
   </form>
   <div data-door-workspace hidden>

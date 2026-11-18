@@ -1,7 +1,9 @@
+import { setupTurnstile } from './turnstile.js';
 import { request, status, message, withSubmit } from './api.js';
 import { renderHeroMedia } from './hero-media.js';
 (async () => {
 const form = document.querySelector('[data-entry-form]');
+const security = setupTurnstile(form, 'entry');
 const availability = document.querySelector('[data-registration-status]');
 const feedback = document.querySelector('[data-entry-status]');
 let refreshing = false;
@@ -14,6 +16,7 @@ try {
   const compatible = config.mediaConsentVersion === form.elements.mediaConsent.value && config.entryFormVersion === form.dataset.formVersion && config.maxGroupSize === Number(form.elements.groupSize.dataset.maxGroupSize);
   const open = config.registrationOpen && compatible;
   form.hidden = !open;
+  if (open) security.start(config);
   const closedMessage = !compatible
     ? 'Entry is temporarily unavailable while the entry form is updated. Please refresh in a moment.'
     : config.resultsPublished && config.results
@@ -32,12 +35,16 @@ form.addEventListener('submit', event => {
   withSubmit(form, async () => {
     const fields = new FormData(form);
     if (fields.get('website')) return;
+    let attempted = false;
     try {
-      await request('/api/entries', { method: 'POST', body: { name: fields.get('name'), email: fields.get('email'), city: fields.get('city'), stateProvince: fields.get('stateProvince'), country: fields.get('country'), entryFormVersion: form.dataset.formVersion, groupSize: Number(fields.get('groupSize')), consent: fields.get('consent') === 'on', mediaConsent: form.elements.mediaConsent.checked, mediaConsentVersion: fields.get('mediaConsent') } });
+      const turnstileToken = security.token();
+      attempted = true;
+      await request('/api/entries', { method: 'POST', body: { turnstileToken, name: fields.get('name'), email: fields.get('email'), city: fields.get('city'), stateProvince: fields.get('stateProvince'), country: fields.get('country'), entryFormVersion: form.dataset.formVersion, groupSize: Number(fields.get('groupSize')), consent: fields.get('consent') === 'on', mediaConsent: form.elements.mediaConsent.checked, mediaConsentVersion: fields.get('mediaConsent') } });
       status(feedback, 'Check your inbox for a private link to confirm or manage your group entry. Your email must be confirmed before the drawing.', 'success');
       form.reset();
       feedback.focus();
     } catch (error) { status(feedback, message(error), 'error'); feedback.focus(); }
+    finally { if (attempted) security.reset(); }
   });
 });
 

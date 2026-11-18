@@ -13,6 +13,8 @@ globs = ["**/*.woff2"]
 fallthrough = true
 
 [vars]
+TURNSTILE_SITE_KEY = "0x4AAAAAAGHbuqs6HrTfu9QA"
+TURNSTILE_HOSTNAMES = "chiledrop.com,www.chiledrop.com"
 # Retain the previous origin during the custom-domain transition.
 ALLOWED_ORIGINS = "https://chiledrop.com,https://www.chiledrop.com,https://aindaco1.github.io"
 PUBLIC_SITE_URL = "https://chiledrop.com"
@@ -29,7 +31,7 @@ migrations_dir = "migrations"
 [triggers]
 crons = ["* * * * *", "0 16 * * MON"]
 
-# Secrets: RESEND_API_KEY, OUTBOX_ENCRYPTION_KEY, TICKET_SIGNING_KEY (independent 32-byte base64url keys).
+# Secrets: TURNSTILE_SECRET_KEY, RESEND_API_KEY, OUTBOX_ENCRYPTION_KEY, TICKET_SIGNING_KEY (independent 32-byte base64url keys).
 # Keep credentials out of this file and the GitHub Pages build.
 
 # SUPER_ADMIN_EMAILS is privately provisioned as a secret. Database admins use admin_access.

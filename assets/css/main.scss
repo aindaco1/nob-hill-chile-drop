@@ -212,3 +212,13 @@ h1,h2,h3,.text-link,.button{overflow-wrap:anywhere}
 // Event styling for the shared Platform confirmation control and admin roster.
 .admin-access-list{list-style:none;padding:0;display:grid;gap:1rem}.admin-access-list li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding-block:1rem;border-bottom:1px solid var(--line)}.admin-access-list li>div{min-width:0;flex:1 1 14rem;overflow-wrap:anywhere}.admin-access-list strong,.admin-access-list span{display:block}.admin-access-list .button{flex:0 0 auto}
 .dw-admin-dialog{max-width:min(36rem,calc(100% - 2rem));max-height:calc(100% - 2rem);padding:clamp(.75rem,4vw,1.5rem);border:1px solid var(--lime);background:var(--ink);color:var(--white);overflow-wrap:anywhere}.dw-admin-dialog::backdrop{background:rgba(0,0,0,.75)}.dw-admin-dialog__surface{display:grid;gap:1.25rem}.dw-admin-dialog h2{font-size:clamp(1.75rem,5vw,2.75rem)}.dw-admin-dialog__actions{display:flex;gap:1rem;flex-wrap:wrap}.dw-admin-dialog button{flex:1 1 10rem;min-width:0;min-height:52px;padding:.75rem .5rem;border:1px solid currentColor;border-radius:3px;background:transparent;color:var(--white);font:inherit}.dw-admin-dialog .btn-danger{background:var(--red);color:var(--ink)}
+
+/* Turnstile keeps its native accessible UI; compact below its 300px minimum. */
+.footer-social{display:flex;flex-direction:column;align-items:flex-start;gap:.6rem}
+.footer-social .text-link{font-size:1rem}
+.security-check{min-width:0;max-width:100%;padding:12px;border:1px solid #596766;border-radius:4px;background:var(--ink);color:var(--white);display:grid;gap:.5rem}
+.security-check__label{font-weight:700;font-size:1rem}
+.security-check__status{font-size:1rem;line-height:1.5;overflow-wrap:anywhere}
+.security-check [data-turnstile-widget]{min-width:0;width:100%;min-height:65px}
+.security-check[data-size=compact] [data-turnstile-widget]{min-height:140px}
+.security-check__retry{justify-self:start;min-height:44px;background:transparent;color:var(--lime);border:0;padding:.25rem 0;font:inherit;text-decoration:underline}

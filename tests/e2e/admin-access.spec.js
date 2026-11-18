@@ -1,3 +1,4 @@
+import { mockTurnstile } from './turnstile-mock.js';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { fixture } from '../../api/test/helpers.js';
@@ -6,6 +7,7 @@ import { applyTextScale } from '../../shared/dust-wave-platform/packages/test-co
 const api = 'https://nob-hill-chile-drop-api.jogo.workers.dev';
 const owner = 'owner@example.test';
 async function setup(page, holdList = null) {
+  await mockTurnstile(page);
   const f = fixture(); f.env.SUPER_ADMIN_EMAILS = owner; f.env.ALLOWED_ORIGINS = 'http://127.0.0.1:4173';
   await page.route(`${api}/**`, async route => {
     const request = route.request(), url = new URL(request.url());

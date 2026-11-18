@@ -62,9 +62,9 @@ export function createDoor({ adminRole, configuredAdmin, normalizedEmail, rateLi
     ]);
     return summary(env, now);
   }
-  async function login(request, env, now) {
+  async function login(request, env, now, body) {
     requireMail(env);
-    const email = normalizedEmail((await bodyOf(request)).email);
+    const email = normalizedEmail(body.email);
     await rateLimit(env, `door-email:${email}`, 3, 60 * MINUTE, now);
     if (await allowed(env, email)) {
       const token = randomToken(); const hash = await sha256Hex(token); const expires = now + 15 * MINUTE;
@@ -125,10 +125,10 @@ export function createDoor({ adminRole, configuredAdmin, normalizedEmail, rateLi
     }
     return { ...(await inspect(env, body.ticket, now)), alreadyCheckedIn: result[0].meta.changes === 0 };
   }
-  async function handle(request, env, now, path) {
+  async function handle(request, env, now, path, protectedBody) {
     if (['/api/door/login','/api/door/verify'].includes(path) && request.method === 'POST') {
-      await rateLimit(env, `door-ip:${request.headers.get('cf-connecting-ip') || 'unknown'}`, 60, 15 * MINUTE, now);
-      return path.endsWith('/login') ? login(request, env, now) : verify(request, env, now);
+      if (path === '/api/door/verify') await rateLimit(env, `door-ip:${request.headers.get('cf-connecting-ip') || 'unknown'}`, 60, 15 * MINUTE, now);
+      return path.endsWith('/login') ? login(request, env, now, protectedBody) : verify(request, env, now);
     }
     const actor = await authenticate(request, env, now);
     await rateLimit(env, `door-staff:${actor.email}`, 120, MINUTE, now);

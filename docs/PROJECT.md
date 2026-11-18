@@ -73,6 +73,13 @@ These changes are deployed. The refreshed production snapshot below records the 
 - The separate personal-photos/photoshoot restriction was removed at the organizer's request. Recording-consent wording is unchanged but italicized in the rules, with regular type in the shared form checkbox. Event/access questions on the rules page go to `nobhillabqmainstreet@gmail.com`, owned by `_data/event.yml`; this is distinct from the existing private administration, privacy and report contacts.
 - The release uses additive migration `0002_media_consent_and_display.sql`, the Worker and Pages. New forms fail closed against an older consent contract; old forms receive a refresh instruction from the new Worker. See [Operations](OPERATIONS.md#rules-consent-and-stream-release) for sequencing and rollback limits.
 
+## November 18 rules, social link and form security
+
+- The venue's existing fireworks rule explicitly includes poppers (fireworks) and confetti, as requested by the organizer. Recording consent is unchanged.
+- The shared footer links Instagram and the organizer-supplied Facebook profile. `_data/event.yml` owns both URLs.
+- Public drawing entry, organizer sign-in and volunteer sign-in use Cloudflare Turnstile. The dark widget uses flexible width when its container is at least 300px wide and compact mode below that, including enlarged text layouts. Failure and expiry require a fresh check; an unsuccessful submission retains the entered fields.
+- The Worker checks the token with Cloudflare before creating an entry or queuing a sign-in message, including expected hostname and form action. Existing email verification, membership checks and drawing/admission rules remain authoritative. Private link exchange and authenticated staff screens do not load the challenge script. See [release and recovery](OPERATIONS.md#turnstile-form-protection).
+
 ## Organizer access management
 
 Organizer access now has two roles: admins retain the existing entry, drawing, export and volunteer controls; only a configured super admin can manage the admin roster. The roster is private D1 data, with protected configured accounts for recovery. Weekly reporting stays at its existing destination. Platform supplies the API client, crypto/request/mail primitives and confirmation dialog; Chile Drop owns membership, role policy and database/API contracts. See [Operations](OPERATIONS.md#organizer-access-management).

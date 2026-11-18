@@ -28,6 +28,8 @@ Resource IDs and URLs are identifiers, not secrets. Recheck the live account/bin
 | Secret `SUPER_ADMIN_EMAILS` | Comma-separated protected super-admin identities; privately provisioned, not published in source |
 | Worker `REPORT_EMAIL` | Weekly report destination and reply-to; currently the same organizer |
 | Worker `EMAIL_FROM` | Verified sender identity |
+| Worker `TURNSTILE_SITE_KEY`, `TURNSTILE_HOSTNAMES` | Public widget key and exact allowed Siteverify hostnames (`chiledrop.com,www.chiledrop.com`) |
+| Secret `TURNSTILE_SECRET_KEY` | Server-side Siteverify credential for that widget; never in Pages/Git/logs |
 | Secret `RESEND_API_KEY` | Provider credential; never in Git/Pages |
 | Secret `TICKET_SIGNING_KEY` | Independent 32 random bytes as unpadded base64url; signs event/group QR credentials. Preserve it after passes are issued. |
 | Secret `OUTBOX_ENCRYPTION_KEY` | 32 random bytes as unpadded base64url (43 characters); encrypts queued private payloads |
@@ -212,3 +214,13 @@ Run the full tests, Worker dry run and real local Worker PNG check. Review the n
 A render failure returns a non-cacheable redirect to the timeless fallback; it does not publish a false countdown. The normal success response is PNG, not an SVG or browser-rendered HTML. Test real provider previews only with read-only inspectors or explicitly authorized posts; a successful direct image request does not prove Facebook, X, messages or other services have refreshed their cache. Rollback can restore static `og:image`/`twitter:image` metadata independently of the additive public Worker route.
 
 Public SEO indexing was authorized November 17. Keep `preview: false`: robots.txt allows crawling and advertises the canonical sitemap; public pages have no noindex directive. `private_page: true` is the shared source for private-page noindex and sitemap exclusion. Keep that flag on entry/admin/pass/check-in pages. Allow crawlers to read those pages’ noindex tags; actual entry and staff data remain behind Worker authorization. Verify rendered robots.txt, public/private metadata and sitemap membership after a change. Search engines control crawl/index timing; deployment does not prove search inclusion.
+
+## Turnstile form protection
+
+Provision a Managed Turnstile widget for `chiledrop.com` (which also permits subdomains) with pre-clearance disabled. Keep the exact backend allowlist `chiledrop.com,www.chiledrop.com`. Do not authorize localhost or GitHub's shared hosting origin in this production widget. Set the public site key and hostname list in `api/wrangler.toml`; install its corresponding secret as `TURNSTILE_SECRET_KEY` through the private credential workflow. Do not rotate existing mail/ticket secrets or alter D1.
+
+Run `npm test` and `npm run api:check`. Capture live health/config, Worker bindings/secret names, deployment version and schedules. Release Pages and promptly deploy the Worker from the same reviewed commit: Pages obtains its site key from `/api/config`, so the security check is temporarily unavailable until the Worker is updated. Existing cached pages lacking a token are rejected after the Worker deploys; refreshing loads the new form. Do not disable verification to bridge the gap. No migration, drawing operation, real entry or login-email probe is required.
+
+Verify the exact Pages workflow and Worker traffic version, `health.turnstileConfigured`, public `turnstileSiteKey`, all three live widget layouts and unchanged registration/capacity/lock/revision/display/results. Anonymous GET/config checks are sufficient for routine release. Use isolated database/stub mail tests for form submissions; no production sign-in or registration smoke sends. Check the provider widget without submitting real forms. Record physical-device/Safari and actual provider-token acceptance limits honestly.
+
+If the script is blocked or verification fails, users can retry the security check without losing form input; an API submission refreshes the token. Diagnose widget hostnames, site-key/secret pairing, Cloudflare availability and script blockers. Missing configuration fails closed. Prefer a forward fix; rolling back the Worker to a pre-Turnstile version removes server enforcement and must be an explicit security decision. Keep old unrelated secret values, queued mail, drawing and entry data intact.

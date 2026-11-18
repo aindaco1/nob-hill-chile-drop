@@ -1,3 +1,4 @@
+import { mockTurnstile } from './turnstile-mock.js';
 import { test,expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { waitForStableRendering,applyTextScale } from '../../shared/dust-wave-platform/packages/test-core/src/rendering.js';
@@ -8,9 +9,10 @@ const api='https://nob-hill-chile-drop-api.jogo.workers.dev';
 const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-headers':'Content-Type, Authorization','access-control-allow-methods':'GET, POST, PATCH, DELETE, OPTIONS'};
 // Keep the third-party map out of CI; actual tiles/controls are checked visually at release.
 test.beforeEach(async({page})=>{
+  await mockTurnstile(page);
   await page.route('https://www.openstreetmap.org/export/embed.html?*',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="en"><title>Venue map</title><body><p>Hotel Zazz map preview</p><a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></body></html>'}));
 });
-async function mock(page,handler){await page.route(api+'/**',async route=>{if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers});const path=new URL(route.request().url()).pathname;const body=handler?await handler(path,route.request()):{registrationOpen:true,capacity:2000};return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify(path==='/api/config'?{mediaConsentVersion:'hot-spot-media-2026-11-04',entryFormVersion,maxGroupSize:8,...body}:body)});});}
+async function mock(page,handler){await page.route(api+'/**',async route=>{if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers});const path=new URL(route.request().url()).pathname;const body=handler?await handler(path,route.request()):{registrationOpen:true,capacity:2000};return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify(path==='/api/config'?{turnstileSiteKey:'test-site-key',mediaConsentVersion:'hot-spot-media-2026-11-04',entryFormVersion,maxGroupSize:8,...body}:body)});});}
 test('responsive pages, landmarks and asset paths work at the configured site root',async({page,request})=>{
   await mock(page);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   for(const width of [320,375,768,1024,1440]){await page.setViewportSize({width,height:900});await page.goto('./');await waitForStableRendering(page);await expect(page.locator('h1')).toHaveCount(1);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await expect(page.getByRole('button',{name:'Enter the free drawing'})).toBeVisible();}
@@ -24,7 +26,7 @@ test('custom-domain pages and calendar use the canonical root without the old pr
     await page.goto(`./${path}`);
     await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',`https://chiledrop.com/${path}`);
     await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content',`https://chiledrop.com/${path}`);
-    const resources=await page.locator('script[src],link[rel=stylesheet],link[rel=icon]').evaluateAll(nodes=>nodes.map(n=>n.src||n.href));
+    const resources=await page.locator('script[src],link[rel=stylesheet],link[rel=icon]').evaluateAll(nodes=>nodes.map(n=>n.src||n.href).filter(url=>url.startsWith(location.origin)));
     for(const url of resources){
       expect(new URL(url).pathname).not.toContain('/nob-hill-chile-drop/');
       expect((await request.get(url)).status(),url).toBe(200);
@@ -71,7 +73,7 @@ test('drawing invitation reaches the form and the venue map has a usable externa
 test('entry validates and sends one free group, then shows a confirmation instruction',async({page})=>{
   let submitted;await mock(page,(path,request)=>{if(path==='/api/entries'){submitted=request.postDataJSON();return{ok:true};}return{registrationOpen:true};});
   await page.goto('./#hot-spot');await page.getByLabel('Your name',{exact:true}).fill('Sample Guest');await page.getByLabel('Email address',{exact:true}).fill('guest@example.com');await page.getByLabel('People in your group',{exact:true}).selectOption('4');await fillLocation(page);await page.locator('[name=consent]').check();await page.locator('[name=mediaConsent]').check();await page.getByRole('button',{name:'Enter the free drawing'}).click();
-  await expect(page.locator('[data-entry-status]')).toContainText('Check your inbox');expect(submitted).toEqual({name:'Sample Guest',email:'guest@example.com',groupSize:4,...location,entryFormVersion,consent:true,mediaConsent:true,mediaConsentVersion:'hot-spot-media-2026-11-04'});expect(await page.evaluate(()=>Object.keys(localStorage))).toEqual([]);await expect(page.locator('[data-entry-form]')).not.toHaveAttribute('aria-busy','true');
+  await expect(page.locator('[data-entry-status]')).toContainText('Check your inbox');expect(submitted).toEqual({turnstileToken:expect.stringMatching(/^test:entry:/),name:'Sample Guest',email:'guest@example.com',groupSize:4,...location,entryFormVersion,consent:true,mediaConsent:true,mediaConsentVersion:'hot-spot-media-2026-11-04'});expect(await page.evaluate(()=>Object.keys(localStorage))).toEqual([]);await expect(page.locator('[data-entry-form]')).not.toHaveAttribute('aria-busy','true');
 });
 test('entry and group edits require an explicit recording checkbox and expose the rules',async({page})=>{
   const submissions=[];

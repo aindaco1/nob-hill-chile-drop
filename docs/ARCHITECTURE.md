@@ -32,6 +32,7 @@ Pages contains no database, secrets or server-side application runtime. The Work
 | Visual system, responsive layout, animation CSS | [`assets/css/main.scss`](../assets/css/main.scss) |
 | Falling photographic chile decoration | [`_includes/falling-chiles.html`](../_includes/falling-chiles.html), opted in by homepage front matter; shared lifecycle in `main.js`, CSS rotation/vertical translation reuse the existing WebP |
 | Countdown, animation lifecycle, cursor, video | [`assets/js/main.js`](../assets/js/main.js) |
+| Form security | [`assets/js/turnstile.js`](../assets/js/turnstile.js), [`_includes/turnstile.html`](../_includes/turnstile.html), [`api/src/turnstile.js`](../api/src/turnstile.js); Cloudflare Siteverify before registration/staff login side effects |
 | Public registration | [`assets/js/entry.js`](../assets/js/entry.js) |
 | Homepage media and public config refresh | [`assets/js/hero-media.js`](../assets/js/hero-media.js), [`assets/js/entry.js`](../assets/js/entry.js) |
 | Recording-consent copy and reusable checkbox | [`_data/event.yml`](../_data/event.yml), [`_includes/media-consent.html`](../_includes/media-consent.html) |
@@ -95,7 +96,7 @@ See [Drawing](DRAWING.md) for post-preparation erasure: rank/size remain while p
 
 ## Authentication and privacy
 
-Links carry random tokens in URL fragments (`#token=…`). Browser code removes the fragment before exchanging the token; the server stores token hashes. Successful exchange creates a role-specific Bearer session saved in `sessionStorage`, never a cookie or persistent `localStorage`. UI sign-out clears the browser copy; it does not revoke the server token before expiry. Do not introduce third-party scripts on private token pages.
+Links carry random tokens in URL fragments (`#token=…`). Browser code removes the fragment before exchanging the token; the server stores token hashes. Successful exchange creates a role-specific Bearer session saved in `sessionStorage`, never a cookie or persistent `localStorage`. UI sign-out clears the browser copy; it does not revoke the server token before expiry. Do not introduce third-party scripts into private link exchange or authenticated workspaces. The requested Turnstile integration loads its official script only on public entry and anonymous staff sign-in screens, after URL fragments have been cleared; it is not loaded when restoring or exchanging a staff session. Leaving an authenticated staff workspace reloads an anonymous document before loading Turnstile, discarding previous private DOM.
 
 Allowed origins are exact origins, not URL prefixes. Private GETs also require an allowed `Origin` header. Bearer auth and current configured/database organizer membership protect private records; CORS alone does not. Super-admin-only roster operations check the configured super-admin identities on the server. All projects on `https://aindaco1.github.io` share an origin, so the project path is not a security boundary.
 

@@ -1,3 +1,4 @@
+import { setupTurnstile } from './turnstile.js';
 import { setupDoorAdmin } from './admin-door.js';
 import { setupAdminAccess } from './admin-access.js';
 import { request, status, message, takeLinkToken, withSubmit } from './api.js';
@@ -5,6 +6,7 @@ import { request, status, message, takeLinkToken, withSubmit } from './api.js';
 const find = selector => document.querySelector(selector);
 const feedback = find('[data-admin-status]');
 const login = find('[data-admin-login]');
+const security = setupTurnstile(login, 'admin_login');
 const dashboard = find('[data-admin-dashboard]');
 const settingsForm = find('[data-settings]');
 const displayForm = find('[data-display-settings]');
@@ -14,7 +16,13 @@ let snapshot, offset = 0;
 const doorAdmin = setupDoorAdmin(() => session);
 const adminAccess = setupAdminAccess(() => session);
 const token = takeLinkToken();
-function signout() {sessionStorage.removeItem(key);session='';snapshot=null;adminAccess.setViewer(null);dashboard.hidden=true;login.hidden=false;}
+function signout() {
+  const hadPrivateView = !dashboard.hidden;
+  sessionStorage.removeItem(key); session = ''; snapshot = null; adminAccess.setViewer(null); dashboard.hidden = true; login.hidden = false;
+  // Discard private DOM before a third-party challenge runs on the sign-in screen.
+  if (hadPrivateView) location.replace(location.pathname + location.search);
+  else security.start();
+}
 function stat(label, value) {const box=document.createElement('div');box.className='dashboard-stat';const number=document.createElement('strong');number.textContent=value;const text=document.createElement('span');text.textContent=label;box.append(number,text);return box;}
 function render(data) {
   snapshot=data; dashboard.hidden=false;login.hidden=true;
@@ -45,7 +53,18 @@ function render(data) {
 }
 async function refresh(){const current=session;try{const data=await request(`/api/admin/entries?limit=50&offset=${offset}`,{},current);if(!session||session!==current)return;render(data);await Promise.all([doorAdmin.refresh(),adminAccess.refresh()]);}catch(error){if(session!==current)return;if(error.status===401)signout();throw error;}}
 async function action(button,run){button.disabled=true;try{await run();await refresh();}catch(error){status(feedback,message(error),'error');feedback.focus();}finally{button.disabled=false;if(snapshot)render(snapshot);}}
-login.addEventListener('submit',event=>{event.preventDefault();withSubmit(login,async()=>{try{await request('/api/admin/login',{method:'POST',body:{email:login.elements.email.value}});status(feedback,'If this is an authorized organizer email, a sign-in link will arrive shortly.','success');}catch(error){status(feedback,message(error),'error');}});});
+login.addEventListener('submit', event => {
+  event.preventDefault();
+  withSubmit(login, async () => {
+    let attempted = false;
+    try {
+      const turnstileToken = security.token(); attempted = true;
+      await request('/api/admin/login', { method: 'POST', body: { email: login.elements.email.value, turnstileToken } });
+      status(feedback, 'If this is an authorized organizer email, a sign-in link will arrive shortly.', 'success');
+    } catch (error) { status(feedback, message(error), 'error'); }
+    finally { if (attempted) security.reset(); }
+  });
+});
 settingsForm.addEventListener('submit',event=>{event.preventDefault();withSubmit(settingsForm,async()=>{try{await request('/api/admin/settings',{method:'PATCH',body:{registrationOpen:settingsForm.elements.registrationOpen.checked,capacity:Number(settingsForm.elements.capacity.value)}},session);await refresh();status(feedback,'Registration settings saved.','success');}catch(error){status(feedback,message(error),'error');}});});
 displayForm.addEventListener('submit', event => {
   event.preventDefault();
@@ -73,5 +92,6 @@ find('[data-next]').addEventListener('click',event=>action(event.currentTarget,a
 
 if(token){status(feedback,'Confirming organizer sign-in…');try{const data=await request('/api/admin/verify',{method:'POST',body:{token}});session=data.accessToken;sessionStorage.setItem(key,session);await refresh();if(session===data.accessToken)status(feedback,'Signed in. No drawing or email publication happens automatically.','success');}catch(error){signout();status(feedback,message(error),'error');}}
 else if(session){try{await refresh();}catch(error){status(feedback,message(error),'error');}}
+else security.start();
 
 })();

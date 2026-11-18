@@ -1,9 +1,11 @@
+import { setupTurnstile } from './turnstile.js';
 import { request, status, message, takeLinkToken, withSubmit } from './api.js';
 import { takeTicketCode, ticketCode } from './ticket-code.js';
 
 const find = selector => document.querySelector(selector);
 const feedback = find('[data-door-status]');
 const login = find('[data-door-login]');
+const security = setupTurnstile(login, 'volunteer_login');
 const workspace = find('[data-door-workspace]');
 const confirm = find('[data-door-confirm]');
 const key = 'chile-drop-door-session';
@@ -15,7 +17,13 @@ const video = find('[data-camera]');
 const canvas = document.createElement('canvas');
 function stopCamera() { cameraAttempt += 1; clearTimeout(timer); stream?.getTracks().forEach(track => track.stop()); stream = null; video.srcObject = null; video.hidden = true; find('[data-camera-stop]').hidden = true; find('[data-camera-start]').disabled = false; }
 function clearResult() { snapshot = null; requestId = null; find('[data-door-ticket]').hidden = true; confirm.reset(); }
-function signedOut() { stopCamera(); clearResult(); sessionStorage.removeItem(key); session = ''; workspace.hidden = true; login.hidden = false; }
+function signedOut() {
+  const hadPrivateView = !workspace.hidden;
+  stopCamera(); clearResult(); sessionStorage.removeItem(key); sessionStorage.removeItem('chile-drop-admin-session'); session = ''; workspace.hidden = true; login.hidden = false;
+  // A fresh document keeps previous guest details out of the anonymous challenge page.
+  if (hadPrivateView) location.replace(location.pathname + location.search);
+  else security.start();
+}
 function fail(error) { if (error.status === 401) signedOut(); status(feedback, message(error), 'error'); feedback.focus(); }
 function gate(door) {
   find('[data-door-gate]').textContent = !door.admissionOpen ? 'Check-in is closed. An organizer must open it.' : door.waitlistOpen ? 'Check-in is open. Waitlisted groups may enter when staff confirm there is room.' : door.selectedCutoffLabel ? `Selected-group check-in is open. Waitlist check-in opens at ${door.selectedCutoffLabel}.` : 'Selected-group check-in is open. The waitlist cutoff has not been set.';
@@ -51,12 +59,23 @@ async function start() {
     let data;
     if (signInToken) { data = await request('/api/door/verify', { method: 'POST', body: { token: signInToken } }); session = data.accessToken; sessionStorage.setItem(key, session); }
     else if (session) data = await request('/api/door/session', {}, session);
-    else return;
+    else { security.start(); return; }
     workspace.hidden = false; login.hidden = true; find('[data-door-identity]').textContent = `Signed in as ${data.email}`; gate(data.door);
     if (credential) await inspect(credential);
   } catch (error) { signedOut(); fail(error); }
 }
-login.addEventListener('submit', event => { event.preventDefault(); withSubmit(login, async () => { try { await request('/api/door/login', { method: 'POST', body: { email: login.elements.email.value } }); status(feedback, 'If your email has volunteer access, a sign-in link will arrive shortly. Open it in this browser.', 'success'); } catch(error) { fail(error); } }); });
+login.addEventListener('submit', event => {
+  event.preventDefault();
+  withSubmit(login, async () => {
+    let attempted = false;
+    try {
+      const turnstileToken = security.token(); attempted = true;
+      await request('/api/door/login', { method: 'POST', body: { email: login.elements.email.value, turnstileToken } });
+      status(feedback, 'If your email has volunteer access, a sign-in link will arrive shortly. Open it in this browser.', 'success');
+    } catch (error) { fail(error); }
+    finally { if (attempted) security.reset(); }
+  });
+});
 confirm.addEventListener('submit', event => {
   event.preventDefault(); if (!snapshot || busy) return;
   withSubmit(confirm, async () => {

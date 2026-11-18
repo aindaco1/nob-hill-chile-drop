@@ -1,3 +1,4 @@
+import { mockTurnstile } from './turnstile-mock.js';
 import { test, expect } from '@playwright/test';
 import { fixture } from '../../api/test/helpers.js';
 import { ticketCredential, ticketUrl, ticketImage } from '../../api/src/tickets.js';
@@ -7,6 +8,7 @@ import { applyTextScale } from '../../shared/dust-wave-platform/packages/test-co
 const api = 'https://nob-hill-chile-drop-api.jogo.workers.dev';
 async function setup(page) {
   const base = test.info().project.use.baseURL.replace(/\/$/, '');
+  await mockTurnstile(page);
   const f = fixture(); f.env.ALLOWED_ORIGINS = 'http://127.0.0.1:4173'; f.env.PUBLIC_SITE_URL = base;
   const admin = await f.admin();
   f.seedEntry(4, true, 'Alex Example'); f.seedEntry(4, true, 'Sam Example');
@@ -36,7 +38,7 @@ async function setup(page) {
     await f.request('/api/admin/volunteers', { method: 'POST', token: admin, body: { email: 'door@example.test', active: true } });
     await page.goto(`${base}/check-in/`);
     await page.locator('[data-door-login] [name=email]').fill('door@example.test');
-    await page.locator('[data-door-login] button').click();
+    await page.locator('[data-door-login] button[type=submit]').click();
     await expect(page.locator('[data-door-status]')).toContainText('a sign-in link will arrive');
     const token = await f.link('door_link', 'door@example.test');
     await page.goto('about:blank'); await page.goto(`${base}/check-in/#token=${token}`);

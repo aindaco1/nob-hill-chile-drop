@@ -27,7 +27,7 @@ There is no volunteer export, drawing, settings, partial-admission, exit, occupa
 
 ## Volunteer workflow
 
-Volunteers request a single-use email sign-in link (15 minutes). A successful sign-in creates a 12-hour session for the current browser tab. Existing organizers may use their organizer session in the scanner. Staff should use their own device, keep the scanner tab open, and sign out when handing it over; sign-out revokes that server session.
+Volunteers complete the Turnstile security check and request a single-use email sign-in link (15 minutes). The challenge script loads only on the anonymous sign-in screen, after URL credentials are cleared; it does not load during private link exchange or in the authenticated scanner. A successful sign-in creates a 12-hour session for the current browser tab. Existing organizers may use their organizer session in the scanner. Staff should use their own device, keep the scanner tab open, and sign out when handing it over; sign-out revokes that server session.
 
 The in-page camera scanner avoids opening a new tab for every guest. There is no paste-link field or separate Verify group button. Camera permission is requested only on **Scan a group QR**; frames stay on the device. The scanner stops after reading a code, when the page is hidden, or when staff tap Stop camera. A successful scan scrolls the result card's validity badge into view and focuses its heading; reduced motion uses an immediate scroll.
 
@@ -57,7 +57,7 @@ All routes retain exact-origin restrictions, bounded JSON and private/no-store r
 | --- | --- |
 | `POST /api/pass` | `{ticket}`; read-only pass status and cutoff, no contact details |
 | `GET /api/entries/pass` | Entry-owner Bearer; own QR image/pass URL after publication |
-| `POST /api/door/login` | `{email}`; generic response; approved staff only get a link |
+| `POST /api/door/login` | `{email, turnstileToken}`; generic response; approved staff only get a link |
 | `POST /api/door/verify` | `{token}`; consumes link, returns role-specific session |
 | `GET /api/door/session` | Staff/organizer Bearer; identity and current door settings |
 | `POST /api/door/logout` | Staff/organizer Bearer; revokes this session |

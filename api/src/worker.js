@@ -1,3 +1,4 @@
+import { turnstileActions, turnstileReady, verifyTurnstile } from './turnstile.js';
 import { createDoor } from './door.js';
 import { createShareCard } from './share-card.js';
 import shareEvent from './generated/share-data.json' with { type: 'json' };
@@ -111,9 +112,8 @@ async function sendEntryLink(env, entry, now) {
     mailStatement(env, job, 'EXISTS(SELECT 1 FROM entries WHERE id=? AND deleted_at IS NULL)', [entry.id])
   ]);
 }
-async function register(request, env, now) {
+async function register(request, env, now, body) {
   requireMail(env);
-  const body = await bodyOf(request);
   const email = normalizedEmail(body.email);
   const fields = entryFields(body);
   if (!(await settings(env)).registration_open) fail('Drawing entries are closed.', 409, 'registration_closed');
@@ -135,9 +135,9 @@ async function requestEntryLink(request, env, now) {
   if (entry) await sendEntryLink(env, entry, now);
   return GENERIC;
 }
-async function login(request, env, now) {
+async function login(request, env, now, body) {
   requireMail(env);
-  const email = normalizedEmail((await bodyOf(request)).email);
+  const email = normalizedEmail(body.email);
   await rateLimit(env, `admin-email:${email}`, 3, 60 * MINUTE, now);
   if (await adminRole(env, email)) {
     const token = randomToken();
@@ -345,7 +345,7 @@ export function createWorker(dependencies = {}) {
         }
         if (method === 'GET' && path === '/health') {
           await settings(env);
-          return reply(request, env, { ok: true, emailConfigured: mailReady(env), ticketsConfigured: ticketsReady(env) });
+          return reply(request, env, { ok: true, emailConfigured: mailReady(env), ticketsConfigured: ticketsReady(env), turnstileConfigured: turnstileReady(env) });
         }
         if (method === 'GET' && path === '/api/config') {
           const row = await settings(env);
@@ -353,26 +353,32 @@ export function createWorker(dependencies = {}) {
           const totals = drawing?.published_at ? await env.DB.prepare("SELECT COUNT(*) AS selectedOrders,COALESCE(SUM(e.group_size),0) AS selectedPeople FROM results r JOIN entries e ON e.id=r.entry_id WHERE r.status='selected'").first() : null;
           return reply(request, env, { ...settingsView(row, env), freeEntry: true, priceCents: 0, maxGroupSize: MAX_GROUP_SIZE, entryFormVersion: ENTRY_FORM_VERSION,
             consentVersion: CONSENT_VERSION, mediaConsentVersion: MEDIA_CONSENT_VERSION, resultsPublished: Boolean(drawing?.published_at), results: totals,
+            turnstileSiteKey: turnstileReady(env) ? env.TURNSTILE_SITE_KEY : null,
             eventDate: '2026-12-31', dropTime: shareEvent.drop_at, timezone: shareEvent.timezone });
         }
         if (!allowedOrigin(request, env)) fail('Origin is not allowed.', 403, 'origin_forbidden');
         const now = deps.now();
-        if (['POST', 'PATCH', 'DELETE'].includes(method) && !path.startsWith('/api/door/')) {
+        if (['POST', 'PATCH', 'DELETE'].includes(method) && (!path.startsWith('/api/door/') || path === '/api/door/login')) {
           const ip = request.headers.get('cf-connecting-ip') || 'unknown';
-          await rateLimit(env, `ip:${ip}`, 60, 15 * MINUTE, now);
+          await rateLimit(env, `${path === '/api/door/login' ? 'door-ip' : 'ip'}:${ip}`, 60, 15 * MINUTE, now);
+        }
+        let protectedBody;
+        if (method === 'POST' && turnstileActions.has(path)) {
+          protectedBody = await bodyOf(request);
+          await verifyTurnstile(request, env, protectedBody.turnstileToken, turnstileActions.get(path), deps.fetchTarget);
         }
         let payload;
         let status = 200;
-        if (path.startsWith('/api/door/')) payload = await door.handle(request, env, now, path);
+        if (path.startsWith('/api/door/')) payload = await door.handle(request, env, now, path, protectedBody);
         else if (method === 'POST' && path === '/api/pass') {
           const row = await ticketRecord(env, (await bodyOf(request)).ticket);
           payload = { pass: publicTicket(row, await door.config(env)) };
         }
         else if (path === '/api/entries/pass' && method === 'GET') payload = await ownerPass(env, await authenticate(request, env, 'entry_session', now));
-        else if (method === 'POST' && path === '/api/entries') { payload = await register(request, env, now); status = 202; }
+        else if (method === 'POST' && path === '/api/entries') { payload = await register(request, env, now, protectedBody); status = 202; }
         else if (method === 'POST' && path === '/api/entries/link') { payload = await requestEntryLink(request, env, now); status = 202; }
         else if (method === 'POST' && path === '/api/entries/verify') payload = await verify(request, env, now, 'entry');
-        else if (method === 'POST' && path === '/api/admin/login') { payload = await login(request, env, now); status = 202; }
+        else if (method === 'POST' && path === '/api/admin/login') { payload = await login(request, env, now, protectedBody); status = 202; }
         else if (method === 'POST' && path === '/api/admin/verify') payload = await verify(request, env, now, 'admin');
         else if (path === '/api/entries/status' && method === 'GET') payload = { entry: await entryStatus(env, await authenticate(request, env, 'entry_session', now)) };
         else if (path === '/api/entries' && method === 'PATCH') payload = await updateEntry(request, env, await authenticate(request, env, 'entry_session', now), now);

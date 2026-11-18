@@ -26,17 +26,26 @@ export function database() {
   } };
 }
 
-export function fixture() {
+export function fixture({ siteverify } = {}) {
   const DB = database();
   let time = Date.parse('2026-11-01T17:00:00Z');
   const messages = new Map();
   const calls = [];
+  const challenges = new Set();
   const env = {
+    TURNSTILE_SITE_KEY: 'test-site-key', TURNSTILE_SECRET_KEY: 'test-secret-key', TURNSTILE_HOSTNAMES: 'chiledrop.com,www.chiledrop.com,aindaco1.github.io,127.0.0.1',
     DB, ALLOWED_ORIGINS: 'https://chiledrop.com', PUBLIC_SITE_URL: 'https://chiledrop.com',
     ADMIN_EMAILS: 'alonso@dustwave.xyz', REPORT_EMAIL: 'alonso@dustwave.xyz', EMAIL_FROM: 'Chile Drop <hello@example.test>',
     RESEND_API_KEY: 'test-only-no-network', TICKET_SIGNING_KEY: 'JxZup8cL7YLs41tN8mJknhYVZXW1Fe8DJBRG0XhQxGs', OUTBOX_ENCRYPTION_KEY: 'j86WBIp6sDlQ2NpGa6VH4fh6HUaq3XVccN4moM3TLYA'
   };
   const fetchTarget = async (url, init) => {
+    if (url === 'https://challenges.cloudflare.com/turnstile/v0/siteverify') {
+      if (siteverify) return siteverify.call(globalThis, url, init);
+      const { response } = JSON.parse(init.body);
+      if (!/^test:(entry|admin_login|volunteer_login):/.test(response) || challenges.has(response)) return Response.json({ success: false, 'error-codes': ['timeout-or-duplicate'] });
+      challenges.add(response);
+      return Response.json({ success: true, hostname: new URL(env.ALLOWED_ORIGINS.split(',')[0]).hostname, action: response.split(':')[1] });
+    }
     if (url !== 'https://api.resend.com/emails') throw new Error('Unexpected network URL');
     const key = init.headers['Idempotency-Key'];
     calls.push(key);
@@ -45,7 +54,9 @@ export function fixture() {
   };
   const dependencies = { now: () => time, fetchTarget };
   const worker = createWorker(dependencies);
-  async function request(path, { method = 'GET', body, token, origin = env.ALLOWED_ORIGINS, headers: extra = {} } = {}) {
+  async function request(path, { method = 'GET', body, token, origin = env.ALLOWED_ORIGINS, headers: extra = {}, autoChallenge = true } = {}) {
+    const actions = { '/api/entries': 'entry', '/api/admin/login': 'admin_login', '/api/door/login': 'volunteer_login' };
+    if (autoChallenge && method === 'POST' && actions[path] && body && !Object.hasOwn(body, 'turnstileToken')) body = { ...body, turnstileToken: `test:${actions[path]}:${crypto.randomUUID()}` };
     const headers = { origin, 'cf-connecting-ip': '203.0.113.1', ...extra };
     if (body !== undefined) headers['content-type'] = 'application/json';
     if (token) headers.authorization = `Bearer ${token}`;

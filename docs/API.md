@@ -13,13 +13,19 @@ Implementation: [`api/src/worker.js`](../api/src/worker.js). Group pass, volunte
 - JSON errors have `{ "error": "Readable message", "code": "machine_code" }`. Internal exceptions become generic 503 `service_error`; no stack, SQL or provider payload is returned.
 - Responses use `Cache-Control: private, no-store`, `Vary: Origin`, no-referrer, nosniff and noindex headers. CSV is the sole non-JSON success response.
 
+## Turnstile protection
+
+`POST /api/entries`, `/api/admin/login` and `/api/door/login` require `turnstileToken` (a nonblank string of at most 2,048 characters). The Worker calls Cloudflare Siteverify with an eight-second timeout and no redirects. Success must include an allowed `TURNSTILE_HOSTNAMES` hostname and the matching action: `entry`, `admin_login` or `volunteer_login`. Rate limits still apply. Missing/invalid, expired or provider-rejected reused tokens return 400 `turnstile_failed`; missing configuration or provider/network failure returns 503 `turnstile_unavailable`. Neither case creates entries, auth links or mail jobs. Tokens and provider details are never returned or logged.
+
+The browser refreshes the challenge after every attempted API submission and on expiry, and retains form fields on errors. Tokens expire after five minutes; Cloudflare's replay detection is eventually consistent, so Turnstile is not an application idempotency or identity guarantee. Existing entry uniqueness, auth and outbox protections remain. See [Cloudflare validation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/). Private link exchanges, authenticated edits/actions and entry-owner recovery retain their existing contracts.
+
 ## Public and entry routes
 
 | Method and route | Auth | Body | Success |
 | --- | --- | --- | --- |
-| `GET /health` | None | — | 200 `{ok, emailConfigured}`; reads settings and checks mail configuration shape |
+| `GET /health` | None | — | 200 `{ok, emailConfigured, ticketsConfigured, turnstileConfigured}`; reads settings and checks mail configuration shape |
 | `GET /api/config` | None | — | 200 public settings and event metadata, below |
-| `POST /api/entries` | Origin | `{name, email, city, stateProvince, country, entryFormVersion, groupSize, consent: true, mediaConsent: true, mediaConsentVersion}` | 202 generic acknowledgment; queues a verification/access link |
+| `POST /api/entries` | Origin | `{turnstileToken, name, email, city, stateProvince, country, entryFormVersion, groupSize, consent: true, mediaConsent: true, mediaConsentVersion}` | 202 generic acknowledgment; requires `turnstileToken` and queues a verification/access link |
 | `POST /api/entries/link` | Origin | `{email}` | 202 same generic acknowledgment whether an entry exists or not |
 | `POST /api/entries/verify` | Origin | `{token}` | 200 `{accessToken, expiresAt, entry}` |
 | `GET /api/entries/status` | Entry Bearer + Origin | — | 200 `{entry}` |
@@ -50,6 +56,7 @@ Public config contains:
 | `entryFormVersion` | Required field contract: `group-location-2026-11-04` |
 | `consentVersion` | Current rules consent revision: `free-drawing-2026-11-04` |
 | `mediaConsentVersion` | Required recording-consent revision: `hot-spot-media-2026-11-04` |
+| `turnstileSiteKey` | Public widget key when all Turnstile settings are present; otherwise null. The secret is never returned. |
 | `heroMedia` | `animation` (default) or `channel26`; a display choice, independent of drawing state |
 | `resultsPublished`, `results` | Boolean and either null or `{selectedOrders, selectedPeople}`; no identities |
 | `eventDate`, `dropTime`, `timezone` | Event date, explicit midnight instant and IANA zone; currently hardcoded in Worker source |
@@ -60,7 +67,7 @@ An entry object contains `id`, `name`, `email`, `groupSize`, `verified`, `status
 
 | Method and route | Auth | Body/query | Success |
 | --- | --- | --- | --- |
-| `POST /api/admin/login` | Origin | `{email}` | 202 generic acknowledgment; only allowlisted emails receive a link |
+| `POST /api/admin/login` | Origin | `{email, turnstileToken}` | 202 generic acknowledgment; only allowlisted emails receive a link |
 | `POST /api/admin/verify` | Origin | `{token}` | 200 `{accessToken, expiresAt}` |
 | `GET /api/admin/session` | Admin Bearer + Origin | — | 200 `{email, role, canManageAdmins}` |
 | `GET /api/admin/access` | Super-admin Bearer + Origin | — | 200 `{admins: [{email, role, protected}]}` |
